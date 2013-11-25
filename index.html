@@ -13,8 +13,9 @@
             <button id="validate">Validate</button>
         </p>
         <h2>Validation report</h2>
-        <div id="cst">
-            <table>Parse error
+        <div id="cst" class="hidden">
+            <div>Parse error</div>
+            <table>
                 <thead>
                     <tr><th>Parse rule</th>
                     <th>line</th>
@@ -23,8 +24,9 @@
                 <tbody></tbody>
             </table>
         </div>
-        <div id="ast">
-            <table>Warnings and errors
+        <div id="ast" class="hidden">
+            <div>AST warnings and errors</div>
+            <table>
                 <thead>
                     <tr><th>Message</th>
                     <th>line</th>
@@ -33,7 +35,7 @@
                 <tbody></tbody>
             </table>
         </div>
-        <div id="success">Success!  No errors or warnings to report.</div>
+        <div id="success" class="hidden">Success!  No errors or warnings to report.</div>
     
         <script data-main="js/main" src="bower_components/requirejs/require.js"></script>
     

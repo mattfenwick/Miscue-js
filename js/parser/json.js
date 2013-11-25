@@ -136,7 +136,7 @@ define([
     var _json = node('json',
                      ['value', value]), // alt(obj, array)),
 
-        json = seq2L(seq2R(whitespace, _json),
+        json = seq2L(seq2R(whitespace, cut('json value', _json)),
                      cut('unparsed input remaining', not0(item)));
     
     return {

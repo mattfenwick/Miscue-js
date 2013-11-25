@@ -15,8 +15,8 @@ require([
 	'views/input'
 ], function ($, V, A, C, S, I) {
     var model = new V(),
-        ast = new A($("#ast tbody")),
-        cst = new C($("#cst tbody")),
+        ast = new A($("#ast")),
+        cst = new C($("#cst")),
         suc = new S($("#success"));
     
     model.listen(function(d) {ast.render(d);});

@@ -3,18 +3,18 @@ define(function () {
 
     function Ast(elem) {
         this.elem = elem;
+        this.$tbody = elem.find("tbody");
     }
     
     Ast.prototype.render = function(result) {
-        var self = this,
-            warnings;
-        this.elem.empty();
+        var self = this;
+        this.elem.toggleClass('hidden', result.stage !== 'ast');
+        this.$tbody.empty();
         if ( result.stage === 'ast' ) {
-            warnings = result.value;
-            warnings.map(function(w) {
+            result.value.map(function(w) {
                 // needs escaping
-                self.elem.append('<tr><td>' + w[0] + '</td><td>' + w[1][0] + 
-                                 '</td><td>' + w[1][1] + '</td></tr>');
+                self.$tbody.append('<tr><td>' + w[0] + '</td><td>' + w[1][0] + 
+                                   '</td><td>' + w[1][1] + '</td></tr>');
             });
         }
     };

@@ -2,3 +2,19 @@
 #input { 
     width: 100%; 
 }
+
+.hidden {
+    display: none;
+}
+
+#success {
+  border: solid green 2px;
+}
+
+#ast, #cst {
+  border: solid red 2px;
+}
+
+#ast > table, #cst > table, #ast td, #cst td {
+  border: solid black 1px;
+}
