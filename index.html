@@ -1,27 +1,42 @@
 <!doctype html>
 <html lang="en">
-<head>
-   <meta charset="utf-8" /> 
-   <title>Why is my JSON borked?</title> 
-   <link href="style/style.css" rel="stylesheet" type="text/css" />
-   <script type="text/javascript" src="src/jquery.js"></script>
-   <script data-main="src/main" src="src/require.js"></script>
-</head>
+    <head>
+       <meta charset="utf-8" /> 
+       <title>Why is my JSON borked?</title> 
+       <link href="style/style.css" rel="stylesheet" type="text/css" />
+    </head>
 
-<body>
-  <h1>Why is my JSON borked?  A JSON validator</h1> 
-  <textarea id="input" rows="15" cols="25"></textarea>
-  <p>
-    <button id="validate">Validate</button>
-  </p>
-  <h2>Validation report</h2>
-  <table border="1">
-   <tr><th>Parsing</th><th>AST construction</th></tr>
-   <tr>
-    <td><ul id="parsing"></ul></td>
-    <td><ul id="ast"></ul></td>
-   </tr>
-  </table>
-</body> 
+    <body>
+        <h1>Why is my JSON borked?  JSON validation</h1> 
+        <textarea id="input" rows="15" cols="25"></textarea>
+        <p>
+            <button id="validate">Validate</button>
+        </p>
+        <h2>Validation report</h2>
+        <div id="cst">
+            <table>Parse error
+                <thead>
+                    <tr><th>Parse rule</th>
+                    <th>line</th>
+                    <th>column</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="ast">
+            <table>Warnings and errors
+                <thead>
+                    <tr><th>Message</th>
+                    <th>line</th>
+                    <th>column</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="success"></div>
+    
+        <script data-main="js/main" src="bower_components/requirejs/require.js"></script>
+    
+    </body> 
 
 </html> 
