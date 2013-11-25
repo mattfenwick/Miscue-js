@@ -1,8 +1,8 @@
 define(function () {
     'use strict';
 
-    function Input(elem, model) {
-        elem.click(function() {
+    function Input(button, elem, model) {
+        button.click(function() {
             model.parse(elem.val());
         });
     }

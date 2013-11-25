@@ -8,7 +8,7 @@ define(function () {
     Cst.prototype.render = function(result) {
         var self = this,
             estack;
-        this.elem.clear();
+        this.elem.empty();
         if ( result.stage === 'cst' ) {
             estack = result.value;
             estack.map(function(e) {

@@ -8,7 +8,7 @@ define(function () {
     Ast.prototype.render = function(result) {
         var self = this,
             warnings;
-        this.elem.clear();
+        this.elem.empty();
         if ( result.stage === 'ast' ) {
             warnings = result.value;
             warnings.map(function(w) {
@@ -17,8 +17,7 @@ define(function () {
                                  '</td><td>' + w[1][1] + '</td></tr>');
             });
         }
-    });
-        
+    };
 
     return Ast;
 });

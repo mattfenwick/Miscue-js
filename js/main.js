@@ -14,11 +14,14 @@ require([
 	'views/success',
 	'views/input'
 ], function ($, V, A, C, S, I) {
-    var model = new V();
+    var model = new V(),
+        ast = new A($("#ast tbody")),
+        cst = new C($("#cst tbody")),
+        suc = new S($("#success"));
     
-    V.listen(new A($("#ast")));
-    V.listen(new C($("#cst")));
-    V.listen(new S($("#success")));
+    model.listen(function(d) {ast.render(d);});
+    model.listen(function(d) {cst.render(d);});
+    model.listen(function(d) {suc.render(d);});
     
-    new I($("#input"), model);
+    new I($("#validate"), $("#input"), model);
 });

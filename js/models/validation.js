@@ -9,6 +9,7 @@ define([
     
     V.prototype.parse = function(input) {
         var parsed = Parser.parse(input, [1, 1]);
+        console.log(JSON.stringify(parsed));
         this.notify(parsed);
     };
     

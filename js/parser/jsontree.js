@@ -10,9 +10,11 @@
 //    escapes to chars
 //    join up string literal
 
-define(["app/maybeerror", "app/json", "app/combinators"], function(M, J, C) {
-    // uh, not sure if the json import is actually necessary.
-    // just used for a convenience function that could really go elsewhere
+define([
+    "unparse-js/maybeerror", 
+    "unparse-js/combinators"
+], function(M, C) {
+    "use strict";
 
     var _escapes = {'"': '"',  '\\': '\\', 
                     '/': '/',  'b': '\b' ,
@@ -36,7 +38,7 @@ define(["app/maybeerror", "app/json", "app/combinators"], function(M, J, C) {
             return [[], _escapes[val]]; // else -- no problem
         } else if ( node._name === 'character' ) {
             // how do get the ord of the character?
-            if ( String.charCodeAt(val) < 32 ) {
+            if ( val.charCodeAt() < 32 ) {
                 return [[['invalid control character', node._state]], undefined];
             }
             return [[], val];  // else -- we're good
@@ -55,7 +57,6 @@ define(["app/maybeerror", "app/json", "app/combinators"], function(M, J, C) {
             concat(errors, c[0]);
             chars.push(c[1]);
         });
-        console.log('in string: ' + JSON.stringify([errors, chars]));
         // a little hack -- if there's any errors, don't report a real value
         if ( errors.length > 0 ) {
             return [errors, undefined];
@@ -148,6 +149,7 @@ define(["app/maybeerror", "app/json", "app/combinators"], function(M, J, C) {
                 if ( key in seen_keys ) {
                     errors.push(['duplicate key', seen_keys[key], pair.key._state]);
                 } else {
+                    console.log("haven't seen <" + key + "> yet");
                     seen_keys[key] = pair.key._state;
                     obj[key] = p[1][1];
                 }
