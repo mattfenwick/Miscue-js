@@ -10,6 +10,16 @@
 //    escapes to chars
 //    join up string literal
 
+/*
+can always change the code again later to report parent position (where applicable)
+{'type': ..., 'element': ..., 'message': ..., 'character': ..., 'position': ...}
+{'type': 'error',   'message': 'invalid escape sequence',    'character': '...', 'position': ...}
+{'type': 'error',   'message': 'invalid control character',  'code': 22,         'position': ...}
+{'type': 'error',   'message': 'number: leading 0',          'text': '001',      'position': ...}
+{'type': 'warning', 'message': 'number: overflow',           'text': '3e32234',  'position': ...}
+{'type': 'warning', 'message': 'number: possible underflow', 'text': '4e-32424', 'position': ...}
+{'type': 'warning', 'message': 'duplicate key',              'key': ...,         'positions': [...]}
+*/
 define([
     "unparse-js/maybeerror", 
     "unparse-js/combinators"
@@ -27,41 +37,59 @@ define([
         });
     }
     
+    function make_error(type, element, message, text, position) {
+        return {
+            'type'    : type    ,
+            'element' : element ,
+            'message' : message ,
+            'text'    : text    ,
+            'position': position
+        };
+    }
+    
+    function ret_err(errors, value) {
+        return {
+            'errors': errors,
+            'value': value
+        };
+    }
+    
     function t_char(node) {
-        var val = node.value;
+        var val = node.value,
+            pos = node._state;
         if ( node._name === 'unicode escape' ) {
-            return [[], String.fromCharCode(parseInt(val.join(''), 16))];
+            var char = String.fromCharCode(parseInt(val.join(''), 16));
+            return ret_err([], char);
         } else if ( node._name === 'escape' ) {
             if ( !(val in _escapes) ) {
-                return [[['invalid escape sequence', node._state]], undefined];
+                return ret_err([make_error('error', 'string', 'invalid escape sequence', val, pos)], 
+                               undefined);
             }
-            return [[], _escapes[val]]; // else -- no problem
+            return ret_err([], _escapes[val]); // else -- no problem
         } else if ( node._name === 'character' ) {
-            // how do get the ord of the character?
-            if ( val.charCodeAt() < 32 ) {
-                return [[['invalid control character', node._state]], undefined];
+            var code = val.charCodeAt();
+            if ( code < 32 ) {
+                return ret_err([make_error('error', 'string', 'invalid control character', 'code: ' + code, pos)],
+                               undefined);
             }
-            return [[], val];  // else -- we're good
+            return ret_err([], val);  // else -- we're good
         }
         throw new Error('invalid character node type -- ' + str(node._name));
     }
     
     function t_string(node) {
-        // check that node _name is string (optional)
-        // pull out the value (?), fix up all the characters, join them into a string
-        // watch out for errors, reporting position if necessary
         var errors = [],
             chars = [];
         node.value.map(function(t) {
             var c = t_char(t);
-            concat(errors, c[0]);
-            chars.push(c[1]);
+            concat(errors, c.errors);
+            chars.push(c.value);
         });
         // a little hack -- if there's any errors, don't report a real value
         if ( errors.length > 0 ) {
-            return [errors, undefined];
+            return ret_err(errors, undefined);
         } else {
-            return [errors, chars.join('')]; // what about reporting the string's position?
+            return ret_err(errors, chars.join(''));
         }
     }
     
@@ -69,10 +97,11 @@ define([
         // check that node _name is number (optional)
         var errors = [],
             sign = node.sign ? node.sign : '+',
-            i = node.integer.join('');
+            i = node.integer.join(''),
+            pos = node._state;
         // check that there's no leading 0's
         if ( (i[0] === '0') && (i.length > 1) ) {
-            errors.push(['number: invalid leading 0', node._state]);
+            errors.push(make_error('error', 'number', 'invalid leading 0', i, pos));
         }
         var d = node.decimal ? node.decimal.digits.join('') : '', 
             exp = '';
@@ -86,19 +115,17 @@ define([
         var val = [sign, i, '.', d, exp].join(''),
             // convert to a float
             num = parseFloat(val);
-        console.log('in: ' + val + ' ,  out: ' + num);
         // check for overflow
         if ( num === Infinity || num === -Infinity ) {
-            errors.push(['number: floating-point overflow', node._state]);
+            errors.push(make_error('warning', 'number', 'overflow', val, pos));
         }
         // obviously this underflow check is not correct:
         // 1. false positives like '0'
         // 2. ??? false negatives ??? other IEEE 0's or NaN's or something ???
         if ( num === 0 ) {
-            errors.push(['number: possible floating-point underflow', node._state]);
+            errors.push(make_error('warning', 'number', 'possible underflow', val, pos));
         }
-        console.log('num out: ' + JSON.stringify([errors, num]));
-        return [errors, num];
+        return ret_err(errors, num);
     }
     
     var _keywords = {
@@ -111,9 +138,10 @@ define([
     //   sanity check more than something that's expected to happen
     function t_keyword(node) {
         if ( node.value in _keywords ) {
-            return [[], _keywords[node.value]];
+            return ret_err([], _keywords[node.value]);
         }
-        return [[['invalid keyword', node._state]], undefined];
+        return ret_err([make_error('error', 'keyword', 'invalid keyword', node.value, node._state)],
+                       undefined);
     }
     
     function t_array(node) {
@@ -121,41 +149,45 @@ define([
             vals = [];
         node.body.values.map(function(v) {
             var e = t_value(v);
-            concat(errors, e[0]);
-            vals.push(e[1]); // may contain undefineds ... right?  is that a problem?
+            concat(errors, e.errors);
+            vals.push(e.value);
         });
-        return [errors, vals]; // what about the array position ?
+        return [errors, vals]; // array position not important
     }
     
     function t_pair(node) {
         var errors = [],
             s = t_string(node.key),
             v = t_value(node.value);
-        concat(errors, s[0]);
-        concat(errors, v[0]);
-        var kv_pair = [s[1], v[1]];
-        return [errors, kv_pair]; // what about the key/val position?
+        concat(errors, s.errors);
+        concat(errors, v.errors);
+        var kv_pair = [s.value, v.value];
+        return ret_err(errors, kv_pair); // key/val position unimportant
     }
     
     function t_build_object(pairs) {
         var errors = [],
             obj = {},
-            seen_keys = {};
+            positions = {},
+            seen_twice = {};
         pairs.map(function(pair) {
             var p = t_pair(pair);
-            concat(errors, p[0]);
-            var key = p[1][0];
+            concat(errors, p.errors);
+            var key = p.value[0];
             if ( typeof key === 'string' ) { // `key` would be falsy if there were an error in it ... right?
-                if ( key in seen_keys ) {
-                    errors.push(['duplicate key', seen_keys[key], pair.key._state]);
+                if ( key in positions ) {
+                    seen_twice[key] = true;
                 } else {
-                    console.log("haven't seen <" + key + "> yet");
-                    seen_keys[key] = pair.key._state;
-                    obj[key] = p[1][1];
+                    positions[key] = [];
+                    obj[key] = p.value[1];
                 }
+                positions[key].push(pair.key._state);
             }
         });
-        return [errors, obj];
+        for (var key in seen_twice) {
+            errors.push(make_error('warning', 'object', 'duplicate key', key, positions[key]));
+        }
+        return ret_err(errors, obj);
     }
 
     function t_object(node) {

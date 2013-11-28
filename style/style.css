@@ -11,7 +11,7 @@
   border: solid green 2px;
 }
 
-#ast, #cst {
+#ast, #cst, #unexerr {
   border: solid red 2px;
 }
 
