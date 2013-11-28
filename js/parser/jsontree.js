@@ -20,10 +20,7 @@ can always change the code again later to report parent position (where applicab
 {'type': 'warning', 'message': 'number: possible underflow', 'text': '4e-32424', 'position': ...}
 {'type': 'warning', 'message': 'duplicate key',              'key': ...,         'positions': [...]}
 */
-define([
-    "unparse-js/maybeerror", 
-    "unparse-js/combinators"
-], function(M, C) {
+define(function() {
     "use strict";
 
     var _escapes = {'"': '"',  '\\': '\\', 
