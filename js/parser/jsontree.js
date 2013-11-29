@@ -10,16 +10,6 @@
 //    escapes to chars
 //    join up string literal
 
-/*
-can always change the code again later to report parent position (where applicable)
-{'type': ..., 'element': ..., 'message': ..., 'character': ..., 'position': ...}
-{'type': 'error',   'message': 'invalid escape sequence',    'character': '...', 'position': ...}
-{'type': 'error',   'message': 'invalid control character',  'code': 22,         'position': ...}
-{'type': 'error',   'message': 'number: leading 0',          'text': '001',      'position': ...}
-{'type': 'warning', 'message': 'number: overflow',           'text': '3e32234',  'position': ...}
-{'type': 'warning', 'message': 'number: possible underflow', 'text': '4e-32424', 'position': ...}
-{'type': 'warning', 'message': 'duplicate key',              'key': ...,         'positions': [...]}
-*/
 define(function() {
     "use strict";
 
@@ -93,7 +83,7 @@ define(function() {
     function t_number(node) {
         // check that node _name is number (optional)
         var errors = [],
-            sign = node.sign ? node.sign : '+',
+            sign = node.sign ? node.sign : '',
             i = node.integer.join(''),
             pos = node._state;
         // check that there's no leading 0's
@@ -119,7 +109,7 @@ define(function() {
         // obviously this underflow check is not correct:
         // 1. false positives like '0'
         // 2. ??? false negatives ??? other IEEE 0's or NaN's or something ???
-        if ( num === 0 ) {
+        if ( num === 0 && node.exponent ) {
             errors.push(make_error('warning', 'number', 'possible underflow', val, pos));
         }
         return ret_err(errors, num);
@@ -149,7 +139,7 @@ define(function() {
             concat(errors, e.errors);
             vals.push(e.value);
         });
-        return [errors, vals]; // array position not important
+        return ret_err(errors, vals); // array position not important
     }
     
     function t_pair(node) {
@@ -171,7 +161,8 @@ define(function() {
             var p = t_pair(pair);
             concat(errors, p.errors);
             var key = p.value[0];
-            if ( typeof key === 'string' ) { // `key` would be falsy if there were an error in it ... right?
+            // key is undefined if there's an error in it. don't want to confuse empty string case
+            if ( typeof key === 'string' ) {
                 if ( key in positions ) {
                     seen_twice[key] = true;
                 } else {
@@ -209,7 +200,11 @@ define(function() {
     
     
     return {
-        't_json': t_json
+        't_json'    : t_json,
+        't_value'   : t_value,
+        'make_error': make_error,
+        'ret_err'   : ret_err,
+        't_char'    : t_char
     };
     
 });

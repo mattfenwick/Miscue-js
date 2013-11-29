@@ -15,10 +15,10 @@ define([
             throw new Error('unparsed input remaining at line ' + st[0] + ', column ' + st[1]);
         }
         var valids = JT.t_json(parsed.value.result);
-        if ( valids[0].length > 0 ) {
+        if ( valids.errors.length > 0 ) {
             return {
                 'stage': 'ast',
-                'value': valids[0]
+                'value': valids.errors
             };
         }
         return {'stage': 'done', 'value': 'success'};
