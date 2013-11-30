@@ -9,12 +9,22 @@
 
 #success {
   border: solid green 2px;
+  background: #88ff88;
 }
 
 #ast, #cst, #unexerr {
   border: solid red 2px;
 }
 
-#ast > table, #cst > table, #ast td, #cst td {
+.errtable, .errtable td {
   border: solid black 1px;
+}
+
+.warning {
+  background: #ffff44;
+  border: solid purple 3px;
+}
+
+.error {
+  background: #ff4444;
 }
