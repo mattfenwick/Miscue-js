@@ -1,53 +1,42 @@
-define(function () {
+define([
+    "HTML"
+], function (HTML) {
     'use strict';
 
-    function Ast(elem) {
-        this.elem = elem;
-        this.$tbody = elem.find("tbody");
+    function Ast(tag_id) {
+        this.elem = HTML.query(tag_id);
+        this.$tbody = this.elem.query("tbody");
+    }
+    
+    function position(pos) {
+        return 'line: ' + pos[0] + ', column: ' + pos[1];
     }
     
     Ast.prototype.render = function(result) {
-        var self = this;
-        this.elem.toggleClass('hidden', result.stage !== 'ast');
-        this.$tbody.empty();
+        var elem = this.$tbody;
+        elem.query('tr').remove();
         if ( result.stage === 'ast' ) {
+            this.elem.each('classList.remove', 'hidden');
             result.value.map(function(w) {
+                var row = elem.add('tr');
                 // needs escaping
                 if ( w.message === 'duplicate key' ) {
-                    var pos = w.position.map(function(p) {return '<li>line: ' + p[0] + ', column: ' + p[1] + '</li>';}),
-                        list = '<ul>' + pos.join('') + '</ul>';
-                    self.$tbody.append('<tr><td>'  + w.message + 
-                                       '</td><td>' + w.element +
-                                       '</td><td>' + w.text    +
-                                       '</td><td>' + list      +
-                                       '</td></tr>');
+                    row.add('td').textContent = w.message;
+                    row.add('td').textContent = w.element;
+                    row.add('td').textContent = w.text;
+                    var list = row.add('td').add('ul');
+                    w.position.map(function(p) {
+                        list.add('li').textContent = position(p);
+                    });
                 } else {
-                    var p = w.position;
-                    self.$tbody.append('<tr><td>'  + w.message  +
-                                       '</td><td>' + w.element  + 
-                                       '</td><td>' + w.text     +
-                                       '</td><td>' + 'line: ' + p[0] + ', column: ' + p[1] +
-                                       '</td></tr>');
+                    row.add('td').textContent = w.message;
+                    row.add('td').textContent = w.element;
+                    row.add('td').textContent = w.text;
+                    row.add('td').textContent = position(w.position);
                 }
             });
-        }
-    };
-
-    Ast.prototype.render2 = function(result) {
-        var self = this;
-        this.elem.toggleClass('hidden', result.stage !== 'ast');
-        this.$tbody.empty();
-        if ( result.stage === 'ast' ) {
-            result.value.map(function(w) {
-                // needs escaping
-                if ( w.message === 'duplicate key' ) {
-                    self.$tbody.append('<tr><td>' + w.message + ' ' + w.key + '</td><td>' +
-                                       JSON.stringify(w.positions));
-                } else {
-                    self.$tbody.append('<tr><td>' + w[0] + '</td><td>' + w[1][0] + 
-                                       '</td><td>' + w[1][1] + '</td></tr>');
-                }
-            });
+        } else {
+            this.elem.each('classList.add', 'hidden');
         }
     };
 

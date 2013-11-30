@@ -2,7 +2,8 @@
 
 require.config({
 	paths: {
-		jquery: '../bower_components/jquery/jquery',
+		'jquery': '../bower_components/jquery/jquery',
+		'HTML': '../bower_components/HTML/HTML'
 	}
 });
 
@@ -16,10 +17,10 @@ require([
 	'views/unexerr'
 ], function ($, V, A, C, S, I, E) {
     var model = new V(),
-        ast = new A($("#ast")),
-        cst = new C($("#cst")),
-        suc = new S($("#success")),
-        err = new E($("#unexerr"));
+        ast = new A("#ast"),
+        cst = new C("#cst"),
+        suc = new S("#success"),
+        err = new E("#unexerr");
     
     model.listen(function(d) {ast.render(d);});
     model.listen(function(d) {cst.render(d);});

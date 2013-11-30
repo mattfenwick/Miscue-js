@@ -1,15 +1,18 @@
-define(function () {
+define([
+    "HTML"
+], function (HTML) {
     'use strict';
 
-    function UnexErrr(elem) {
-        this.elem = elem;
+    function UnexErrr(tag_id) {
+        this.elem = HTML.query(tag_id);
     }
     
     UnexErrr.prototype.render = function(result) {
-        var self = this;
-        this.elem.toggleClass('hidden', result.stage !== 'unexerr');
         if ( result.stage === 'unexerr' ) {
-            this.elem.text('Unexpected error -- ' + result.message);
+            this.elem.each('classList.remove', 'hidden');
+            this.elem.textContent = 'Unexpected error -- ' + result.message;
+        } else {
+            this.elem.each('classList.add', 'hidden');
         }
     };
 
