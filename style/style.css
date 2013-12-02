@@ -16,15 +16,15 @@
   border: solid red 2px;
 }
 
-.errtable, .errtable td {
+.errtable th, .errtable td {
   border: solid black 1px;
+  padding: 5px;
 }
 
 .warning {
-  background: #ffff44;
-  border: solid purple 3px;
+  background: #ffff88;
 }
 
 .error {
-  background: #ff4444;
+  background: #ff8888;
 }

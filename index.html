@@ -13,23 +13,16 @@
             <button id="validate">Validate</button>
         </p>
         <h2>Validation report</h2>
-        <div id="cst" class="hidden">
-            <div>Parse error</div>
-            <table class="errtable">
-                <thead>
-                    <tr><th>Parse rule</th>
-                    <th>line</th>
-                    <th>column</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+
+        <div id="cst" class="hidden error">
+            <pre id="parseerror"></pre>
         </div>
+
         <div id="ast" class="hidden">
-            <div>AST warnings and errors</div>
             <table class="errtable">
                 <thead>
                     <tr>
-                      <th>message</th>
+                      <th>problem</th>
                       <th>element</th>
                       <th>offending text</th>
                       <th>position(s)</th>
@@ -38,12 +31,16 @@
                 <tbody></tbody>
             </table>
         </div>
-        <div id="success" class="hidden">Success!  No errors or warnings to report.</div>
+
+        <div id="success" class="hidden">
+            <pre>Success!  No errors or warnings to report</pre>
+        </div>
+
         <div id="unexerr" class="hidden"></div>
     
         <div><a href="https://github.com/mattfenwick/WhyIsMyJsonBorked">Source code</a></div>
+
         <script data-main="js/main" src="bower_components/requirejs/require.js"></script>
     
     </body> 
-
 </html> 

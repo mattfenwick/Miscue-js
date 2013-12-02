@@ -5,21 +5,21 @@ define([
 
     function Cst(tag_id) {
         this.elem = HTML.query(tag_id);
-        this.$tbody = this.elem.query("tbody");
+        this.$div = this.elem.query("#parseerror");
     }
     
     Cst.prototype.render = function(result) {
-        var elem = this.$tbody;
-        elem.query('tr').remove();
         if ( result.stage === 'cst' ) {
             this.elem.each('classList.remove', 'hidden');
-            result.value.map(function(e) {
-                // does HTML do the escaping?
-                var row = elem.add('tr');
-                row.add('td').textContent = e[0];
-                row.add('td').textContent = e[1][0];
-                row.add('td').textContent = e[1][1];
-            });
+            var str = result.value.map(function(e) {
+                return ['  ', 
+                        e[0], 
+                        ' at line ', 
+                        e[1][0], 
+                        ', column ', 
+                        e[1][1]].join('');
+            }).join('\n');
+            this.$div.textContent = 'Parse error while parsing:\n' + str;
         } else {
             this.elem.each('classList.add', 'hidden');
         }
