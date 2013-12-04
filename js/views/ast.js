@@ -19,7 +19,6 @@ define([
             this.elem.each('classList.remove', 'hidden');
             result.value.map(function(w) {
                 var row = elem.add('tr');
-                row.each('classList.add', w.type);
                 if ( w.message === 'duplicate key' ) {
                     row.add('td').textContent = w.message;
                     row.add('td').textContent = w.element;

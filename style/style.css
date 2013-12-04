@@ -10,6 +10,7 @@
 #success {
   border: solid green 2px;
   background: #88ff88;
+  padding: 5px;
 }
 
 #ast, #cst, #unexerr {
@@ -21,10 +22,11 @@
   padding: 5px;
 }
 
-.warning {
+.errtable tbody tr {
   background: #ffff88;
 }
 
-.error {
+#cst {
   background: #ff8888;
+  padding: 5px;
 }
