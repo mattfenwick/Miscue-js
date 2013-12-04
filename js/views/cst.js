@@ -19,7 +19,7 @@ define([
                         ', column ', 
                         e[1][1]].join('');
             }).join('\n');
-            this.$div.textContent = 'Parse error while parsing:\n' + str;
+            this.$div.textContent = 'Parse error trace:\n' + str;
         } else {
             this.elem.each('classList.add', 'hidden');
         }
