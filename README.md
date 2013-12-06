@@ -1,4 +1,4 @@
-WhyIsMyJsonBorked
+Miscue-js
 =================
 
 An open source JSON validator, committed to providing the most complete
@@ -7,7 +7,7 @@ and accurate reporting of errors and warnings.
 ## How do I get started? ##
 
 This is a JavaScript application that runs in your 
-web browser -- try it out [here](http://mattfenwick.github.io/WhyIsMyJsonBorked/)!
+web browser -- try it out [here](http://mattfenwick.github.io/Miscue-js/)!
 
 ## How does it work? ##
 
