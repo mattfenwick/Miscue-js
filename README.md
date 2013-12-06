@@ -1,13 +1,19 @@
 Miscue-js
 =================
 
-An open source JSON validator, committed to providing the most complete
+Miscue-js provides a free, easy-to-use JSON validation service.
+
+It is committed to providing complete
 and accurate reporting of errors and warnings.
 
-## How do I get started? ##
+This is an open source project under the MIT license.
 
-This is a JavaScript application that runs in your 
-web browser -- try it out [here](http://mattfenwick.github.io/Miscue-js/)!
+
+## Getting started ##
+
+Try it out [here](http://mattfenwick.github.io/Miscue-js/)! 
+(requires JavaScript)
+
 
 ## How does it work? ##
 
@@ -22,7 +28,8 @@ There are two main phases:
     number overflow, and number underflow.  Reports every problem
     found in the JSON input.
 
-## Why should I use this? ##
+
+## What's the point? ##
 
 I designed and implemented this JSON validator because of two major
 inadequacies in every other JSON validator I've used:  
@@ -37,6 +44,7 @@ These problems are addressed by:
    a syntax error
  - a second (semantic) pass, if parsing completes successfully, that
    checks for problems which are outside the scope of the JSON spec
+
 
 ## A short list of common JSON errors ##
 
