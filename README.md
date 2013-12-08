@@ -23,8 +23,8 @@ My main goal in building this application is a JSON validator which:
  - reports as much relevant information about the errors as possible, 
    especially the cause and the location
 
-Since the what -- in the sense of what is an error -- and the
-how -- in the sense of what information is reported with an error -- of
+Since the what (i.e. what input triggers an error) and the
+how (i.e. what information is reported with an error) of
 JSON error-reporting is not specified in [RFC 4627](http://www.ietf.org/rfc/rfc4627.txt), 
 I came up with my own definition.  There are three main pieces: 
 
@@ -39,12 +39,12 @@ I came up with my own definition.  There are three main pieces:
 
    Since the parser is LL, the first syntax error stops parsing.
 
- - **semantic errors** -- are legal according to RFC 4627, but annoying
+ - **semantic errors** -- legal according to RFC 4627, but troublesome
    in practice:
 
+   - duplicate keys in objects
    - number overflow
    - number underflow 
-   - duplicate keys in objects
    
    All semantic errors are reported on a single pass.
 
