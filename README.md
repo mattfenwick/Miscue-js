@@ -11,53 +11,61 @@ This is an open source project under the MIT license.
 
 ## Getting started ##
 
-Try it out [here](http://mattfenwick.github.io/Miscue-js/)! 
+[Try me out](http://mattfenwick.github.io/Miscue-js/)! 
 (requires JavaScript)
 
 
-## How does it work? ##
+## Motivation and Design ##
 
-There are two main phases:
+My main goal in building this application is a JSON validator which:
 
- 1. **parsing** -- recognizes the tree structure
-    of the JSON text.  Since every parse error is fatal,
-    parsing stops at the first error and gives an informative
-    error report.
+ - reports all errors -- or as many as possible in case of malformed input
+ - reports as much relevant information about the errors as possible, 
+   especially the cause and the location
 
- 2. **semantic checks** -- checks for duplicate keys,
-    number overflow, and number underflow.  Reports every problem
-    found in the JSON input.
+Since the what -- in the sense of what is an error -- and the
+how -- in the sense of what information is reported with an error -- of
+JSON error-reporting is not specified in [RFC 4627](http://www.ietf.org/rfc/rfc4627.txt), 
+I came up with my own definition.  There are three main pieces: 
 
+ - **syntax errors** -- derived from inspecting [the grammar](grammar.md).
+   Some examples include (not an exhaustive list):
+ 
+   - unclosed strings, arrays, and objects
+   - leading `0`s in numbers
+   - invalid character escapes such as `\q` in strings
+   - control characters (0 - 31) in strings
+   - missing/extra separators (`:` and `,`)
 
-## What's the point? ##
+   Since the parser is LL, the first syntax error stops parsing.
 
-I designed and implemented this JSON validator because of two major
-inadequacies in every other JSON validator I've used:  
+ - **semantic errors** -- are legal according to RFC 4627, but annoying
+   in practice:
 
- 1. the error reports don't mention the actual problem
- 2. not all problems are reported
+   - number overflow
+   - number underflow 
+   - duplicate keys in objects
+   
+   All semantic errors are reported on a single pass.
 
-These problems are addressed by:
+ - **location reporting** -- reports a stack trace of all the pending rules
+   when the error is detected.  For example, parsing this malformed snippet:
+    
+        { 
+          "abc": "
+    
+   yields an error report something like this:
 
- - a novel error reporting strategy that includes a trace of the 
-   parsing progress which is dumped immediately upon detection of
-   a syntax error
- - a second (semantic) pass, if parsing completes successfully, that
-   checks for problems which are outside the scope of the JSON spec
+        Parse error trace:
+          json at line 1, column 1
+          object at line 1, column 1
+          key/value pair at line 2, column 3
+          string at line 2, column 10
+          double-quote at line 2, column 11
+    
+   Each pending rule includes its location to help you quickly track down
+   the problem.
+          
+## Contributions ##
 
-
-## A short list of common JSON errors ##
-
-Parse errors:
-
- - unclosed strings, arrays, and objects
- - leading `0`s in numbers
- - invalid character escapes such as `\q` in strings
- - control characters (0 - 31) in strings
- - missing/extra separators (`:` and `,`)
-
-Semantic errors:
-
- - number overflow
- - number underflow 
- - duplicate keys in objects
+Feedback of any kind is [welcome](https://github.com/mattfenwick/Miscue-js/issues)!
