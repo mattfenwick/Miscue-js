@@ -1,5 +1,11 @@
 "use strict";
 
+require.config({
+    paths: {
+        'unparse-js': '../bower_components/unparse-js/'
+    }
+});
+
 require([
     "test/json",
     "test/jsontree"

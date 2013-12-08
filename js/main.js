@@ -2,8 +2,9 @@
 
 require.config({
 	paths: {
-		'jquery': '../bower_components/jquery/jquery',
-		'HTML': '../bower_components/HTML/HTML'
+		'jquery'    : '../bower_components/jquery/jquery',
+		'HTML'      : '../bower_components/HTML/HTML',
+		'unparse-js': '../bower_components/unparse-js/'
 	}
 });
 
