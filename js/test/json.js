@@ -1,5 +1,8 @@
+/* global deepEqual */
+/* global test */
+/* global module */
 define([
-    "parser/json", 
+    "parser/json",
     "unparse-js/maybeerror"
 ], function(J, M) {
     "use strict";
@@ -22,8 +25,8 @@ define([
         }
     
         function my_object(pos, seps, vals) {
-            return cstnode('object', pos, 
-                           ['open', '{'], ['close', '}'], 
+            return cstnode('object', pos,
+                           ['open', '{'], ['close', '}'],
                            ['body', {'separators': seps, 'values': vals}]);
         }
         
@@ -32,20 +35,20 @@ define([
         test("Integer", function() {
             var inp = '83 abc';
             deepEqual(J.number.parse(inp, [1,1]),
-                      good('abc', 
-                           [1,4], 
-                           cstnode('number', 
-                               [1,1], 
+                      good('abc',
+                           [1,4],
+                           cstnode('number',
+                               [1,1],
                                ['sign', null],
                                ['integer', ['8', '3']],
                                ['exponent', null],
                                ['decimal', null])));
             var inp2 = '-77 abc';
             deepEqual(J.number.parse(inp2, [1,1]),
-                      good('abc', 
-                           [1,5], 
-                           cstnode('number', 
-                               [1,1], 
+                      good('abc',
+                           [1,5],
+                           cstnode('number',
+                               [1,1],
                                ['sign', '-'],
                                ['integer', ['7', '7']],
                                ['exponent', null],
@@ -55,7 +58,7 @@ define([
         test("DecimalAndExponent", function() {
             var inp = '-8.1e+2 abc';
             deepEqual(J.number.parse(inp, [1, 1]),
-                      good('abc', [1, 9], 
+                      good('abc', [1, 9],
                                   cstnode('number', [1, 1],
                                       ['sign', '-'],
                                       ['integer', ['8']],
@@ -68,17 +71,17 @@ define([
                                                        ['power', ['2']])])));
             var inp2 = '-8.1 abc';
             deepEqual(J.number.parse(inp2, [1,1]),
-                      good('abc', [1,6], 
+                      good('abc', [1,6],
                                   cstnode('number', [1,1],
-                                      ['sign', '-'], 
-                                      ['integer', ['8']], 
+                                      ['sign', '-'],
+                                      ['integer', ['8']],
                                       ['decimal', cstnode('decimal', [1,3],
-                                                      ['dot', '.'], 
+                                                      ['dot', '.'],
                                                       ['digits', ['1']])],
                                       ['exponent', null])));
             var inp3 = '-8e+2 abc';
             deepEqual(J.number.parse(inp3, [1,1]),
-                      good('abc', [1,7], 
+                      good('abc', [1,7],
                                   cstnode('number', [1,1],
                                       ['sign', '-'],
                                       ['integer', ['8']],
@@ -107,7 +110,7 @@ define([
         test("EmptyString", function() {
             var inp = '"" def';
             deepEqual(J.jsonstring.parse(inp, [1,1]),
-                      good('def', [1,4], cstnode('string', [1,1], 
+                      good('def', [1,4], cstnode('string', [1,1],
                                                ['open', '"'],
                                                ['close', '"'],
                                                ['value', []])));
@@ -120,7 +123,7 @@ define([
                     cstnode('character', [1,3], ['value', 'b']),
                     cstnode('character', [1,4], ['value', 'c'])
                 ],
-                val = cstnode('string', [1,1], 
+                val = cstnode('string', [1,1],
                               ['open', '"'],
                               ['close', '"'],
                               ['value', chars]);
@@ -178,7 +181,7 @@ define([
                 [': abc', 'colon']];
             cases.map(function(c) {
                 var inp = c[0], parser = c[1];
-                deepEqual(J[parser].parse(inp, [1,1]), 
+                deepEqual(J[parser].parse(inp, [1,1]),
                           good(inp.slice(2), [1,3], inp[0]));
             });
         });
@@ -199,9 +202,9 @@ define([
                 cstnode('character', [1,4], ['value', 's'])
             ];
             deepEqual(J.keyVal.parse('"qrs"\n : true abc', [1,1]),
-                      good('abc', 
+                      good('abc',
                            [2,9],
-                           cstnode('key/value pair', 
+                           cstnode('key/value pair',
                                [1,1],
                                ['key', cstnode('string', [1,1], ['open', '"'], ['close', '"'], ['value', chars])],
                                ['colon', ':'],
@@ -214,25 +217,25 @@ define([
         });
             
         test("KeyValueMissingValue", function() {
-            deepEqual(J.keyVal.parse('"qrs" :  abc', [1,1]), 
+            deepEqual(J.keyVal.parse('"qrs" :  abc', [1,1]),
                       error([['key/value pair', [1,1]], ['value', [1,10]]]));
         });
     
         test("Object", function() {
-            deepEqual(J.obj.parse('{} abc', [1,1]), 
+            deepEqual(J.obj.parse('{} abc', [1,1]),
                       good('abc', [1,4], my_object([1,1], [], [])));
-            deepEqual(J.obj.parse('{"": null} abc', [1,1]), 
-                      good('abc', 
-                           [1,12], 
-                           my_object([1,1], [], 
-                                     [cstnode('key/value pair', 
+            deepEqual(J.obj.parse('{"": null} abc', [1,1]),
+                      good('abc',
+                           [1,12],
+                           my_object([1,1], [],
+                                     [cstnode('key/value pair',
                                           [1,2],
                                           ['colon', ':'],
                                           ['key', cstnode('string', [1,2], ['open', '"'], ['close', '"'], ['value', []])],
                                           ['value', cstnode('keyword', [1,6], ['value', 'null'])])])));
         });
     
-        test("UnclosedObject", function() { 
+        test("UnclosedObject", function() {
             var e = error([['object', [1,1]], ['close', [1,12]]]);
             deepEqual(J.obj.parse('{"a": null ', [1,1]), e);
             deepEqual(J.obj.parse('{"a": null ,', [1,1]), e);
@@ -241,21 +244,21 @@ define([
     
         test("Array", function() {
             deepEqual(J.array.parse('[] abc', [1,1]),
-                      good('abc', [1,4], 
-                           cstnode('array', [1,1], ['open', '['], ['close', ']'], 
+                      good('abc', [1,4],
+                           cstnode('array', [1,1], ['open', '['], ['close', ']'],
                                ['body', {'values': [], 'separators': []}])));
             deepEqual(J.array.parse('[true]', [1,1]),
-                      good("", [1,7], 
+                      good("", [1,7],
                            cstnode('array', [1,1], ['open', '['], ['close', ']'],
                                ['body', {'values': [cstnode('keyword', [1,2], ['value', 'true'])],
                                          'separators': []}])));
             deepEqual(J.array.parse('[true,false]', [1,1]),
-                      good('', [1,13], 
+                      good('', [1,13],
                            cstnode('array', [1,1], ['open', '['], ['close', ']'],
                                ['body', {'values': [
                                            cstnode('keyword', [1,2], ['value', 'true']),
                                            cstnode('keyword', [1,7], ['value', 'false'])
-                                         ], 
+                                         ],
                                          'separators': [',']}])));
         });
     
@@ -274,7 +277,7 @@ define([
     
         test("Json", function() {
             deepEqual(J.json.parse('{  }  \n', [1,1]),
-                      good("", [2,1], 
+                      good("", [2,1],
                            cstnode('json', [1,1], ['value', my_object([1,1], [], [])])));
         });
         

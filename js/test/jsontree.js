@@ -1,3 +1,6 @@
+/* global deepEqual */
+/* global test */
+/* global module */
 define([
     "parser/jsontree"
 ], function(JT) {
@@ -102,7 +105,7 @@ define([
                       JT.ret_err([], [[]]));
             deepEqual(JT.t_value(ia4),
                       JT.ret_err([e('number', 'overflow', '8e+872'),
-                                  e('number', 'possible underflow', '-2e-564')], 
+                                  e('number', 'possible underflow', '-2e-564')],
                                   [Infinity, 0]));
         });
         
@@ -115,7 +118,7 @@ define([
                       JT.ret_err([e('number', 'overflow', '8e+872')],
                                  {'c\nd': Infinity}));
             deepEqual(JT.t_value(io4),
-                      JT.ret_err([e('object', 'duplicate key', 'c\nd', [null, null])], 
+                      JT.ret_err([e('object', 'duplicate key', 'c\nd', [null, null])],
                                  {'c\nd': 31}));
         });
         

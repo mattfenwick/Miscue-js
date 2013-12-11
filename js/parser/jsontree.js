@@ -10,7 +10,7 @@
 define(function() {
     "use strict";
 
-    var _escapes = {'"': '"',  '\\': '\\', 
+    var _escapes = {'"': '"',  '\\': '\\',
                     '/': '/',  'b': '\b' ,
                     'f': '\f', 'n': '\n' ,
                     'r': '\r', 't': '\t'  };
@@ -63,7 +63,7 @@ define(function() {
     }
     
     function format_number(sign, i, d, exp) {
-        return [sign, i, d ? ( '.' + d ) : '', exp].join(''); 
+        return [sign, i, d ? ( '.' + d ) : '', exp].join('');
     }
     
     function t_number(node) {
@@ -72,7 +72,7 @@ define(function() {
             sign = node.sign ? node.sign : '',
             i = node.integer.join(''),
             pos = node._state;
-        var d = node.decimal ? node.decimal.digits.join('') : '', 
+        var d = node.decimal ? node.decimal.digits.join('') : '',
             exp = '';
         if ( node.exponent ) {
             exp += node.exponent.letter;
@@ -86,20 +86,19 @@ define(function() {
             num = parseFloat(val);
         // check for overflow
         if ( num === Infinity || num === -Infinity ) {
-            errors.push(make_error('number', 
-                                   'overflow', 
-                                   format_number(sign, i, d, exp), 
+            errors.push(make_error('number',
+                                   'overflow',
+                                   format_number(sign, i, d, exp),
                                    pos));
         }
         // underflow check may be incorrect:
         // ??? false negatives ??? other IEEE 0's or NaN's or something ???
         if ( num === 0 && node.exponent ) {
-            errors.push(make_error('number', 
-                                   'possible underflow', 
-                                   format_number(sign, i, d, exp), 
+            errors.push(make_error('number',
+                                   'possible underflow',
+                                   format_number(sign, i, d, exp),
                                    pos));
         }
-        console.log('val: ' + val);
         return ret_err(errors, num);
     }
     

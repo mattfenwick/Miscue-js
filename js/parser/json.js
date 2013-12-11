@@ -1,5 +1,5 @@
 define([
-    "unparse-js/combinators", 
+    "unparse-js/combinators",
     "unparse-js/cst"
 ], function(C, Cst) {
     "use strict";
@@ -9,14 +9,14 @@ define([
         literal = pos.literal,
         satisfy = pos.satisfy,
         oneOf   = pos.oneOf,
-        not1    = pos.not1, 
+        not1    = pos.not1,
         string  = pos.string,
         node    = Cst.node,
         cut     = Cst.cut,
         sepBy0  = Cst.sepBy0,
         addError = Cst.addError;
         
-    var many0 = C.many0, optional = C.optional,  
+    var many0 = C.many0, optional = C.optional,
         pure  = C.pure , seq2R = C.seq2R,
         many1 = C.many1, seq   = C.seq,  alt   = C.alt,
         seq2L = C.seq2L, not0  = C.not0, error = C.error,
@@ -40,13 +40,13 @@ define([
                         ['dot', literal('.')],
                         ['digits', cut('digits', _digits)]),
                         
-        _exponent = node('exponent', 
-                         ['letter', oneOf('eE')         ], 
+        _exponent = node('exponent',
+                         ['letter', oneOf('eE')         ],
                          ['sign', optional(oneOf('+-')) ],
                          ['power', cut('power', _digits)]),
         
-        _integer = addError('invalid leading 0',  
-                            bind(_digits, 
+        _integer = addError('invalid leading 0',
+                            bind(_digits,
                                  function(ds) {
                                      if ( ds[0] === '0' && ds.length > 1 ) {
                                          return error([]);
@@ -54,13 +54,13 @@ define([
                                      return pure(ds);
                                  })),
 
-        _number_1 = node('number', 
+        _number_1 = node('number',
                          ['sign', literal('-')              ],
                          ['integer', cut('digits', _integer)],
                          ['decimal', optional(_decimal)     ],
                          ['exponent', optional(_exponent)   ]),
 
-        _number_2 = node('number', 
+        _number_2 = node('number',
                          ['sign', pure(null)             ], // to match _number_1's schema
                          ['integer', _integer            ],
                          ['decimal', optional(_decimal)  ],
@@ -71,13 +71,13 @@ define([
         _number = alt(_number_1, _number_2);
 
 
-    var _control = addError('invalid control character', 
+    var _control = addError('invalid control character',
                        seq(satisfy(function(c) {return c.charCodeAt() < 32;}), error([]))),
         
         _char = node('character',
                      ['value', not1(alt(oneOf('\\"'), _control))]),
 
-        _escape = node('escape', 
+        _escape = node('escape',
                        ['open', literal('\\')                            ],
                        ['value', cut('simple escape', oneOf('"\\/bfnrt'))]),
 
@@ -87,12 +87,12 @@ define([
                      ['open', string('\\u')                                   ],
                      ['value', cut('4 hexadecimal digits', quantity(_hexC, 4))]),
 
-        _jsonstring = node('string', 
-                           ['open', literal('"')                      ], 
-                           ['value', many0(alt(_char, _unic, _escape))], 
+        _jsonstring = node('string',
+                           ['open', literal('"')                      ],
+                           ['value', many0(alt(_char, _unic, _escape))],
                            ['close', cut('double-quote', literal('"'))]),
 
-        _keyword = node('keyword', 
+        _keyword = node('keyword',
                         ['value', alt(string('true'), string('false'), string('null'))]);
 
 
@@ -125,9 +125,9 @@ define([
                        ['body', sepBy0(value, comma)],
                        ['close', cut('close', cs)   ]).parse;
 
-    obj.parse = node('object', 
-                     ['open', oc                   ], 
-                     ['body', sepBy0(keyVal, comma)], 
+    obj.parse = node('object',
+                     ['open', oc                   ],
+                     ['body', sepBy0(keyVal, comma)],
                      ['close', cut('close', cc)    ]).parse;
 
     var _json = node('json',

@@ -17,6 +17,7 @@ define([
             };
         }
         if ( parsed.value.rest.length !== 0 ) { // shouldn't happen
+            var st = parsed.value.state;
             throw new Error('unparsed input remaining at line ' + st[0] + ', column ' + st[1]);
         }
         var valids = JT.t_json(parsed.value.result);
@@ -27,7 +28,7 @@ define([
             };
         }
         return {'stage': 'done', 'value': 'success'};
-    }
+    };
     
     V.prototype.parse = function(input) {
         try {
