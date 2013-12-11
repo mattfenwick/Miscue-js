@@ -1,21 +1,3 @@
-// Json    :=  Object  |  Array
-//
-// Value   :=  'false'  |  'null'  |  'true'  |  Object  |  Array  |  Number  |  String
-// 
-// Object  :=  '{'  sepBy0(pair, ',')  '}'
-//   where pair  :=  String  ':'  Value
-// 
-// Array   :=  '['  sepBy0(Value, ',')  ']'
-// 
-// Number  :=  '-'(?)  body  frac(?)  exponent(?)
-//   where body   :=  '0'  |  ( [1-9]  [0-9](*) )
-//         frac   :=  '.'  [0-9](+)
-//         exponent  :=  [eE]  [-+](?)  [0-9](+)
-// 
-// String  :=  '"'  ( char  |  escape  |  unicode )(*)  '"'
-//   where char    :=  not1( '\\'  |  '"'  |  \u0000-\u001F )
-//         escape  :=  '\\'  ["\/bfnrt]                            <-- that's 8 characters
-//         unicode :=  '\\u'  [0-9a-eA-E](4)
 define([
     "unparse-js/combinators", 
     "unparse-js/cst"
