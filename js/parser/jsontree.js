@@ -7,6 +7,8 @@
 //    escapes to chars
 //    join up string literal
 //    object/array at top level
+// implementation:
+//   similar to the logging monad
 
 define(function() {
     "use strict";
@@ -197,3 +199,4 @@ define(function() {
     };
     
 });
+

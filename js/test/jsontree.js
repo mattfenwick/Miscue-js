@@ -43,15 +43,15 @@ define([
         // n -> number, k -> keyword, c -> char, s -> string, a -> array, o -> object
         var in1 = number(null, ['3', '1'], null, null),
             in2 = number(null, ['0'], null, null),
-            in4 = number(null, ['8'], null, {'_name': 'exponent', 'letter': 'e', 'sign': '+', 'power': ['8', '7', '2']}),
-            in5 = number('-', ['2'], null, {'_name': 'exponent', 'letter': 'e', 'sign': '-', 'power': ['5', '6', '4']}),
+            in4 = number(null, ['8'], null, {'_name': 'exponent', 'letter': 'e', 'sign': '+', 'power': ['8', '7', '2']}, [2,4]),
+            in5 = number('-', ['2'], null, {'_name': 'exponent', 'letter': 'e', 'sign': '-', 'power': ['5', '6', '4']}, [1,7]),
             ik1 = keyword('true'),
             ik2 = keyword('false'),
             ik3 = keyword('null'),
             ic1 = {'_name': 'character', '_state': null, 'value': 'c'},
             ic3 = {'_name': 'escape', '_state': null, 'open': '\\', 'value': 'n'},
             ic5 = {'_name': 'unicode escape', '_state': null, 'open': '\\u', 'value': ['0', '0', '6', '4']},
-            is1 = {'_name': 'string', '_state': null, 'open': '"', 'close': '"', 'value': [ic1, ic3, ic5]},
+            is1 = {'_name': 'string', '_state': [3,8], 'open': '"', 'close': '"', 'value': [ic1, ic3, ic5]},
             ia1 = {'_name': 'array', '_state': null, 'body': {'values': []}},
             ia2 = {'_name': 'array', '_state': null, 'body': {'values': [in1, ik2]}},
             ia3 = {'_name': 'array', '_state': null, 'body': {'values': [ia1]}},
@@ -69,10 +69,10 @@ define([
             deepEqual(JT.t_value(in2),
                       JT.ret_err([], 0));
             deepEqual(JT.t_value(in4),
-                      JT.ret_err([e('number', 'overflow', '8e+872')],
+                      JT.ret_err([e('number', 'overflow', '8e+872', [2,4])],
                                  Infinity));
             deepEqual(JT.t_value(in5),
-                      JT.ret_err([e('number', 'possible underflow', '-2e-564')],
+                      JT.ret_err([e('number', 'possible underflow', '-2e-564', [1,7])],
                                  0));
         });
         
@@ -104,8 +104,8 @@ define([
             deepEqual(JT.t_value(ia3),
                       JT.ret_err([], [[]]));
             deepEqual(JT.t_value(ia4),
-                      JT.ret_err([e('number', 'overflow', '8e+872'),
-                                  e('number', 'possible underflow', '-2e-564')],
+                      JT.ret_err([e('number', 'overflow', '8e+872', [2,4]),
+                                  e('number', 'possible underflow', '-2e-564', [1,7])],
                                   [Infinity, 0]));
         });
         
@@ -115,10 +115,10 @@ define([
             deepEqual(JT.t_value(io2),
                       JT.ret_err([], {'c\nd': {}}));
             deepEqual(JT.t_value(io3),
-                      JT.ret_err([e('number', 'overflow', '8e+872')],
+                      JT.ret_err([e('number', 'overflow', '8e+872', [2,4])],
                                  {'c\nd': Infinity}));
             deepEqual(JT.t_value(io4),
-                      JT.ret_err([e('object', 'duplicate key', 'c\nd', [null, null])],
+                      JT.ret_err([e('object', 'duplicate key', 'c\nd', [[3,8], [3,8]])],
                                  {'c\nd': 31}));
         });
         
@@ -128,7 +128,7 @@ define([
                 return {'value': obj, '_state': [1, 3], '_name': 'json'};
             }
             deepEqual(JT.t_json(makeJson(in4)),
-                      JT.ret_err([e('number', 'overflow', '8e+872'),
+                      JT.ret_err([e('number', 'overflow', '8e+872', [2,4]),
                                   e('json', message, '', [1,3])],
                                  Infinity));
             deepEqual(JT.t_json(makeJson(ik1)),
@@ -144,3 +144,4 @@ define([
     };
     
 });
+
