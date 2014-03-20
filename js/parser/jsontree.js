@@ -6,6 +6,7 @@
 //    characters to chars
 //    escapes to chars
 //    join up string literal
+//    object/array at top level
 
 define(function() {
     "use strict";
@@ -163,7 +164,7 @@ define(function() {
         return t_build_object(node.body.values); // what about the object position?
     }
     
-    var _values = {
+    var NODE_ACTIONS = {
             'keyword': t_keyword,
             'number' : t_number ,
             'string' : t_string ,
@@ -172,11 +173,18 @@ define(function() {
         };
     
     function t_value(node) {
-        return _values[node._name](node);
+        return NODE_ACTIONS[node._name](node);
     }
     
+    var TOP_LEVEL = {'array': 1, 'object': 1},
+        TOP_LEVEL_WARNING = 'top-level element should be object or array';
+    
     function t_json(node) {
-        return t_value(node.value);
+        var val = t_value(node.value);
+        if ( !TOP_LEVEL.hasOwnProperty(node.value._name) ) {
+            val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._state));
+        }
+        return val;
     }
     
     

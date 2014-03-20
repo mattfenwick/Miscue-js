@@ -122,6 +122,25 @@ define([
                                  {'c\nd': 31}));
         });
         
+        test("top-level: object or array", function() {
+            var message = 'top-level element should be object or array';
+            function makeJson(obj) {
+                return {'value': obj, '_state': [1, 3], '_name': 'json'};
+            }
+            deepEqual(JT.t_json(makeJson(in4)),
+                      JT.ret_err([e('number', 'overflow', '8e+872'),
+                                  e('json', message, '', [1,3])],
+                                 Infinity));
+            deepEqual(JT.t_json(makeJson(ik1)),
+                      JT.ret_err([e('json', message, '', [1,3])], true));
+            deepEqual(JT.t_json(makeJson(is1)),
+                      JT.ret_err([e('json', message, '', [1,3])], 'c\nd'));
+            deepEqual(JT.t_json(makeJson(ia1)),
+                      JT.ret_err([], []));
+            deepEqual(JT.t_json(makeJson(io1)),
+                      JT.ret_err([], {}));
+        });
+        
     };
     
 });
