@@ -5,7 +5,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "jsonlint-js": "0.0.2"
+    "jsonlint-js": "0.0.2",
+    "genhtml-js": "0.0.2"
   },
   "devDependencies": {
     "grunt": "0.4.4",
