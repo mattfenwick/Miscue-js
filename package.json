@@ -3,10 +3,10 @@
   "version": "0.1.2",
   "scripts": {
     "test": "grunt --force",
-    "bundle": "browserify main.js > bundle.js"
+    "bundle": "browserify main.js > build/bundle.js"
   },
   "dependencies": {
-    "jsonlint-js": "0.0.2",
+    "jsonlint-js": "0.0.4",
     "genhtml-js": "0.0.3",
     "jquery": "^2.1.0"
   },

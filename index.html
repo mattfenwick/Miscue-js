@@ -20,32 +20,11 @@
             <button id="validate">Validate</button>
         </p>
         <h2>Validation report</h2>
+        
+        <div id="output"></div>
 
-        <div id="cst" class="hidden">
-            <pre id="parseerror"></pre>
-        </div>
-
-        <div id="ast" class="hidden">
-            <table class="errtable">
-                <thead>
-                    <tr>
-                      <th>problem</th>
-                      <th>element</th>
-                      <th>offending text</th>
-                      <th>position(s)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="success" class="hidden">
-            <pre>Success!  No errors or warnings to report</pre>
-        </div>
-
-        <div id="unexerr" class="hidden"></div>
-
-        <script data-main="js/main" src="bower_components/requirejs/require.js"></script>
+        <script src="build/bundle.js"></script>
     
     </body> 
 </html> 
+

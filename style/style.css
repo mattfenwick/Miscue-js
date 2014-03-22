@@ -7,13 +7,13 @@
     display: none;
 }
 
-#success {
+.success {
   border: solid green 2px;
   background: #88ff88;
   padding: 5px;
 }
 
-#ast, #cst, #unexerr {
+.error {
   border: solid red 2px;
 }
 

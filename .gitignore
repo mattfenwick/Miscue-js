@@ -1,2 +1,4 @@
 *~
-node_modules/
+node_modules/grunt*
+node_modules/browserify/
+node_modules/.bin/

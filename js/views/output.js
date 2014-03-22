@@ -2,10 +2,10 @@
 
 var G = require('genhtml-js'),
     H = G.html,
-    S = H.serialize;
+    S = G.serialize;
 
 var td = H.td, tr = H.tr, table = H.table,
-    div = H.div, elem = H.elem;
+    div = H.div, elem = H.elem, th = H.th;
 
 
 function Output(elem) {
@@ -13,25 +13,32 @@ function Output(elem) {
     this.elem = elem;
 }
 
-function cst(result) {
-    var errs = result.value.map(function(e) {
+function cst(value) {
+    var errs = value.map(function(e) {
         return ['  ', e[0],
                 ' at line ', e[1][0],
                 ', column ', e[1][1]].join('');
     });
     return div({'class': 'error'},
-               pre({}, 'Parse error trace:\n' + str.join('\n')));
+               elem('pre', {}, ['Parse error trace:\n' + errs.join('\n')]));
 }
 
 function position(pos) {
     return 'line: ' + pos[0] + ', column: ' + pos[1];
 }
 
-function ast(result) {
-    result.value.map(function(w) {
+var HEADER = elem('thead',
+                  {},
+                  [tr({}, th({}, 'problem'), // can't remember interface for `elem` -- is third arg an array?
+                          th({}, 'element'),
+                          th({}, 'offending text'),
+                          th({}, 'position(s)'))]);
+
+function ast(value) {
+    var rows = value.map(function(w) {
         var items, pos;
         if ( w.message === 'duplicate key' ) {
-            items = w.position.map(function(p) { return li({}, position(p));});
+            items = w.position.map(function(p) { return elem('li', {}, [position(p)]);});
             pos = elem('ul', {}, items);
         } else {
             pos = position(w.position);
@@ -43,28 +50,27 @@ function ast(result) {
                   td({}, pos));
     });
     var tbody = elem('tbody', {}, rows);
-    return div({'class': 'error'}, table({}, tbody));
+    return div({'class': 'error'}, table({'class': 'errtable'}, HEADER, tbody));
 }
 
 var ACTIONS = {
-    'unexerr': function(result) {
-        return div({'class': 'error'}, 'Unexpected error -- ' + result.message);
+    'unexpected error': function(value) {
+        return div({'class': 'error'}, 'Unexpected error -- ' + value);
     },
-    'success': function(result) {
+    'success': function(_value_) {
         return div({'class': 'success'}, "Success -- no errors or warnings to report!");
     },
-    'cst': cst,
-    'ast': ast
+    'cst error': cst,
+    'ast error': ast
 };
 
 Output.prototype.render = function(result) {
     // blow away everything on this.elem
-    throw new Error('not sure what schema of "result" is -- need to check');
-    this.elem.clear();
-    if ( ACTIONS.hasOwnProperty(result.type) ) {
-        this.elem.append(serialize.serialize(ACTIONS[result.type](result)));
+    this.elem.empty();
+    if ( ACTIONS.hasOwnProperty(result.status) ) {
+        this.elem.append(S.serialize(ACTIONS[result.status](result.value)));
     } else {
-        throw new Error('unrecognized type');
+        throw new Error('unrecognized status -- ' + result.status);
     }
 };
 

@@ -25,7 +25,7 @@ function validate(input) {
     }
     var valids = TC.t_json(parsed.value.result);
     if ( valids.errors.length > 0 ) {
-        return result('ast error', valids.error);
+        return result('ast error', valids.errors);
     }
     return result('success');
 }
