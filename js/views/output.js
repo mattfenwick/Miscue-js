@@ -19,7 +19,7 @@ function cst(result) {
                 ' at line ', e[1][0],
                 ', column ', e[1][1]].join('');
     });
-    return div({'class': 'error'}, 
+    return div({'class': 'error'},
                pre({}, 'Parse error trace:\n' + str.join('\n')));
 }
 
@@ -36,18 +36,18 @@ function ast(result) {
         } else {
             pos = position(w.position);
         }
-        return tr({}, 
-                  td({}, w.message), 
-                  td({}, w.element), 
-                  td({}, w.text), 
+        return tr({},
+                  td({}, w.message),
+                  td({}, w.element),
+                  td({}, w.text),
                   td({}, pos));
     });
-    tbody = elem('tbody', {}, rows);
+    var tbody = elem('tbody', {}, rows);
     return div({'class': 'error'}, table({}, tbody));
 }
 
 var ACTIONS = {
-    'unexerr': function(result) { 
+    'unexerr': function(result) {
         return div({'class': 'error'}, 'Unexpected error -- ' + result.message);
     },
     'success': function(result) {
@@ -63,10 +63,10 @@ Output.prototype.render = function(result) {
     this.elem.clear();
     if ( ACTIONS.hasOwnProperty(result.type) ) {
         this.elem.append(serialize.serialize(ACTIONS[result.type](result)));
-    } else { 
+    } else {
         throw new Error('unrecognized type');
     }
-}
+};
 
 module.exports = Output;
 

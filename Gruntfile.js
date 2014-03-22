@@ -2,7 +2,7 @@
 
 // see http://jshint.com/docs/options/
 var options = {
-    "globals"       : {"define": false},
+    "globals"       : {"require": false, "module": false},
 
     // "camelcase" : false,
     "bitwise"       : false,     // allow bitwise operators (&, |, ^, etc.).
