@@ -1,29 +1,34 @@
 "use strict";
 
-var M = require('unparse-js').maybeerror,
-    P = require('./parser.js'),
+var P = require('./parser.js'),
     TC = require('./treechecker.js');
 
+function result(status, value) {
+    return {'status': status, 'value': value};
+}
 
 function validate(input) {
+    // 4 possible results:
+    //   - cst error
+    //   - unexpected error
+    //   - ast error
+    //   - success
     var parsed = P.json.parse(input, [1, 1]);
     if ( parsed.status !== 'success' ) {
-        return M.error({'stage': 'cst', 'value': parsed.value});
+        return result('cst error', parsed.value);
     }
     // shouldn't happen -- just a sanity check
     if ( parsed.value.rest.length !== 0 ) {
         var st = parsed.value.state;
-        return M.error({
-            'stage': 'unexerr', 
-            'value': 'unparsed input remaining at line ' + st[0] + ', column ' + st[1]
-        });
+        return result('unexpected error',
+                      'unparsed input remaining at line ' + st[0] + ', column ' + st[1]);
     }
     var valids = TC.t_json(parsed.value.result);
     if ( valids.errors.length > 0 ) {
-        return M.error({'stage': 'ast', 'value': valids.errors});
+        return result('ast error', valids.error);
     }
-    return M.pure(null);
-};
+    return result('success');
+}
 
 
 module.exports = {
