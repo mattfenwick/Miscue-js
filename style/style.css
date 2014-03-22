@@ -1,0 +1,30 @@
+
+#input { 
+    width: 100%; 
+}
+
+.success {
+  border: solid green 2px;
+  background: #88ff88;
+  padding: 5px;
+}
+
+.error {
+  border: solid red 2px;
+  background: #ff8888;
+  padding: 5px;
+}
+
+.errtable th, .errtable td {
+  border: solid black 1px;
+  padding: 5px;
+}
+
+.errtable tbody tr {
+  background: #ffff88;
+}
+
+.changed {
+  border: solid red 2px;
+}
+
