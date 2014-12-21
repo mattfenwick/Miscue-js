@@ -1,7 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-var Val = require('jsonlint-js').validator;
+var Val = require('jsonlint-js');
 
 
 function V() {
@@ -192,15 +192,31 @@ function elem(name, attrs, kids) {
 module.exports = {
     'root'    : root,
     'comment' : function(text) {return new model.Comment(text);},
+
     'html'  : tag('html'),
+    'title' : tag('title'),
     'body'  : tag('body'),
     'head'  : tag('head'),
+
     'div'   : tag('div'),
-    'td'    : tag('td'),
-    'th'    : tag('th'),
-    'tr'    : tag('tr'),
+    'p'     : tag('p')  ,
+    'pre'   : tag('pre'),
+    
+    'ul'    : tag('ul'),
+    'ol'    : tag('ol'),
+    'li'    : tag('li'),
+
     'table' : tag('table'),
-    'elem'  : elem
+    'tr'    : tag('tr'),
+    'th'    : tag('th'),
+    'td'    : tag('td'),
+    'tbody' : tag('tbody'),
+    'tfoot' : tag('tfoot'),
+    'thead' : tag('thead'),
+    
+    // escape hatches
+    'tag'   : tag,
+    'elem'  : elem,
 };
 
 
@@ -252,6 +268,11 @@ function Attribute(key, value) {
     } else {
         throw new Error('illegal key -- ' + key);
     }
+    if ( ( value === null ) || ( typeof value === 'string' ) ) {
+        // we're cool
+    } else {
+        throw new Error('illegal value -- ' + value);
+    }
     this.value = value; // anything?  can even be empty?
 }
 
@@ -299,13 +320,13 @@ function ser_elem(node, lines, spaces) {
         attrs = [];
     node.attrs.map(function(a) {
         if ( a.value === null ) {
-            attrs.push(a.key);
+            attrs.push(' ' + a.key);
         } else {
-            attrs.push(a.key + '="' + escape(a.value) + '"');
+            attrs.push(' ' + a.key + '="' + escape(a.value) + '"');
         }
     });
     
-    lines.push(spaces + '<' + node.name + ' ' + attrs.join(' ') + '>');
+    lines.push(spaces + '<' + node.name + attrs.join('') + '>');
     
     node.children.map(function(c) {
         _serialize(c, lines, nextSize);
@@ -9461,18 +9482,45 @@ return jQuery;
 }));
 
 },{}],10:[function(require,module,exports){
-'use strict';
+"use strict";
 
+var P = require('./lib/parser.js'),
+    TC = require('./lib/treechecker.js');
+
+function result(status, value) {
+    return {'status': status, 'value': value};
+}
+
+function validate(input) {
+    // 4 possible results:
+    //   - cst error
+    //   - unexpected error
+    //   - ast error
+    //   - success
+    var parsed = P.json.parse(input, [1, 1]);
+    if ( parsed.status !== 'success' ) {
+        return result('cst error', parsed.value);
+    }
+    // shouldn't happen -- just a sanity check
+    if ( parsed.value.rest.length !== 0 ) {
+        var st = parsed.value.state;
+        return result('unexpected error',
+                      'unparsed input remaining at line ' + st[0] + ', column ' + st[1]);
+    }
+    var valids = TC.t_json(parsed.value.result);
+    if ( valids.errors.length > 0 ) {
+        return result('ast error', valids.errors);
+    }
+    return result('success');
+}
 
 
 module.exports = {
-    'parser'     : require('./lib/parser.js')     ,
-    'treechecker': require('./lib/treechecker.js'),
-    'validator'  : require('./lib/validator.js')
+    'validate': validate
 };
 
 
-},{"./lib/parser.js":11,"./lib/treechecker.js":12,"./lib/validator.js":13}],11:[function(require,module,exports){
+},{"./lib/parser.js":11,"./lib/treechecker.js":12}],11:[function(require,module,exports){
 "use strict";
 
 var u = require('unparse-js'),
@@ -9629,7 +9677,7 @@ module.exports = {
 };
 
 
-},{"unparse-js":14}],12:[function(require,module,exports){
+},{"unparse-js":13}],12:[function(require,module,exports){
 // tasks:
 //    no number overflow/underflow
 //    no duplicate keys in maps
@@ -9705,7 +9753,7 @@ function t_number(node) {
     var errors = [],
         sign = node.sign ? node.sign : '',
         i = node.integer.join(''),
-        pos = node._state;
+        pos = node._start;
     var d = node.decimal ? node.decimal.digits.join('') : '',
         exp = '';
     if ( node.exponent ) {
@@ -9785,7 +9833,7 @@ function t_build_object(pairs) {
             positions[key] = [];
             obj[key] = p.value[1];
         }
-        positions[key].push(pair.key._state);
+        positions[key].push(pair.key._start);
     });
     for (var key in seen_twice) {
         errors.push(make_error('object', 'duplicate key', key, positions[key]));
@@ -9815,7 +9863,7 @@ var TOP_LEVEL = {'array': 1, 'object': 1},
 function t_json(node) {
     var val = t_value(node.value);
     if ( !TOP_LEVEL.hasOwnProperty(node.value._name) ) {
-        val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._state));
+        val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._start));
     }
     return val;
 }
@@ -9831,56 +9879,19 @@ module.exports = {
 
 
 },{}],13:[function(require,module,exports){
-"use strict";
-
-var P = require('./parser.js'),
-    TC = require('./treechecker.js');
-
-function result(status, value) {
-    return {'status': status, 'value': value};
-}
-
-function validate(input) {
-    // 4 possible results:
-    //   - cst error
-    //   - unexpected error
-    //   - ast error
-    //   - success
-    var parsed = P.json.parse(input, [1, 1]);
-    if ( parsed.status !== 'success' ) {
-        return result('cst error', parsed.value);
-    }
-    // shouldn't happen -- just a sanity check
-    if ( parsed.value.rest.length !== 0 ) {
-        var st = parsed.value.state;
-        return result('unexpected error',
-                      'unparsed input remaining at line ' + st[0] + ', column ' + st[1]);
-    }
-    var valids = TC.t_json(parsed.value.result);
-    if ( valids.errors.length > 0 ) {
-        return result('ast error', valids.errors);
-    }
-    return result('success');
-}
-
-
-module.exports = {
-    'validate': validate
-};
-
-
-},{"./parser.js":11,"./treechecker.js":12}],14:[function(require,module,exports){
 'use strict';
 
 
 module.exports = {
     'maybeerror' : require('./lib/maybeerror.js') ,
     'combinators': require('./lib/combinators.js'),
-    'cst'        : require('./lib/cst.js')
+    'cst'        : require('./lib/cst.js'),
+    
+    '__version__': '0.1.6'
 };
 
 
-},{"./lib/combinators.js":15,"./lib/cst.js":16,"./lib/maybeerror.js":17}],15:[function(require,module,exports){
+},{"./lib/combinators.js":14,"./lib/cst.js":15,"./lib/maybeerror.js":16}],14:[function(require,module,exports){
 "use strict";
 
 var M = require('./maybeerror.js');
@@ -9937,6 +9948,7 @@ function fmap(g, parser) {
     /*
     (a -> b) -> Parser e s (m t) a -> Parser e s (m t) b
     */
+    checkParser('fmap', parser);
     checkFunction('fmap', g);
     function h(r) {
         return result(g(r.result), r.rest, r.state);
@@ -9979,7 +9991,7 @@ function error(e) {
     /*
     e -> Parser e s (m t) a
     */
-    function f(xs, s) {
+    function f(_xs_, _s_) {
         return M.error(e);
     }
     return new Parser(f);
@@ -10164,7 +10176,12 @@ function lookahead(parser) {
     Parser e s (m t) a -> Parser e s (m t) None
     */
     checkParser('lookahead', parser);
-    return bind(get, function(xs) {return seq2R(parser, put(xs));});
+    return bind(get, function(xs) {
+        return bind(getState, function(s) {
+            return seq2L(parser,
+                         seq(put(xs), putState(s)));
+        });
+    });
 }
 
 function not0(parser) {
@@ -10226,7 +10243,7 @@ function commit(e, parser) {
 }
 
 // Parser e s (m t) a
-var zero = new Parser(function(xs, s) {return M.zero;});
+var zero = new Parser(function(_xs_, _s_) {return M.zero;});
 
 // Parser e s (m t) (m t)
 var get = new Parser(function(xs, s) {return good(xs, xs, s);});
@@ -10289,7 +10306,9 @@ function Itemizer(item) {
     
     function oneOf(elems) {
         var c_set = _build_set(elems);
-        return satisfy(function(x) {return x in c_set;}); // does this hit prototype properties ... ???
+        return satisfy(function(x) {
+            return c_set.hasOwnProperty(x); // TODO use actual set
+        });
     }
     
     return {
@@ -10406,13 +10425,11 @@ module.exports = {
     'position'   : position,
     'count'      : count,
     
-    'run'        : run,
-    
-    '__version__': '0.1.3'
+    'run'        : run
 };
 
 
-},{"./maybeerror.js":17}],16:[function(require,module,exports){
+},{"./maybeerror.js":16}],15:[function(require,module,exports){
 "use strict";
 
 var C = require('./combinators.js');
@@ -10453,11 +10470,11 @@ function addError(e, parser) {
 }
 
 
-function _has_duplicates(arr) {
+function _forbid_duplicates(arr) {
     var keys = {};
     for(var i = 0; i < arr.length; i++) {
         if ( arr[i] in keys ) {
-            return true;
+            throw new Error('duplicate name -- ' + arr[i]);
         }
         keys[arr[i]] = 1;
     }
@@ -10480,7 +10497,16 @@ function _dict(arr) {
     return obj;
 }
 
-function node(name) {
+function _forbid_keys(forbidden, keys) {
+    var key_set = _set(keys);
+    forbidden.map(function(key) {
+        if ( key in key_set ) {
+            throw new Error('cst node: forbidden key: ' + key);
+        }
+    });
+}
+
+function node(name, _pairs_ /* 0+ 2-element arrays */) {
     /*
     1. runs parsers in sequence
     2. collects results into a dictionary
@@ -10488,19 +10514,14 @@ function node(name) {
     4. adds an error frame
     */
     var pairs = Array.prototype.slice.call(arguments, 1),
-        names = pairs.map(function(x) {return x[0];}),
-        name_set = _set(names);
-    if ( _has_duplicates(names) ) {
-        throw new Error('duplicate names');
-    } else if ( '_name' in name_set ) {
-        throw new Error('forbidden key: "_name"');
-    } else if ( '_state' in name_set ) {
-        throw new Error('forbidden key: "_state"');
-    }
-    function action(state, results) {
+        names = pairs.map(function(x) {return x[0];});
+    _forbid_duplicates(names);
+    _forbid_keys(['_name', '_start', '_end'], names);
+    function action(start, results, end) {
         var out = _dict(results);
-        out._state = state;
+        out._start = start;
         out._name = name;
+        out._end = end;
         return out;
     }
     function closure_workaround(s) { // captures s
@@ -10514,7 +10535,8 @@ function node(name) {
     return addError(name,
                     app(action,
                           getState,
-                          seq.apply(undefined, pairs.map(f))));
+                          seq.apply(undefined, pairs.map(f)),
+                          getState));
 }
 
 function _sep_action(fst, pairs) {
@@ -10554,7 +10576,7 @@ module.exports = {
 };
 
 
-},{"./combinators.js":15}],17:[function(require,module,exports){
+},{"./combinators.js":14}],16:[function(require,module,exports){
 "use strict";
 
 var STATUSES = {
