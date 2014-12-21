@@ -1,6 +1,6 @@
 'use strict';
 
-var Val = require('jsonlint-js').validator;
+var Val = require('jsonlint-js');
 
 
 function V() {

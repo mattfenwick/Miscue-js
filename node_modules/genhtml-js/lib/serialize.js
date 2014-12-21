@@ -26,13 +26,13 @@ function ser_elem(node, lines, spaces) {
         attrs = [];
     node.attrs.map(function(a) {
         if ( a.value === null ) {
-            attrs.push(a.key);
+            attrs.push(' ' + a.key);
         } else {
-            attrs.push(a.key + '="' + escape(a.value) + '"');
+            attrs.push(' ' + a.key + '="' + escape(a.value) + '"');
         }
     });
     
-    lines.push(spaces + '<' + node.name + ' ' + attrs.join(' ') + '>');
+    lines.push(spaces + '<' + node.name + attrs.join('') + '>');
     
     node.children.map(function(c) {
         _serialize(c, lines, nextSize);

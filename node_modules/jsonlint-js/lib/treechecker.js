@@ -73,7 +73,7 @@ function t_number(node) {
     var errors = [],
         sign = node.sign ? node.sign : '',
         i = node.integer.join(''),
-        pos = node._state;
+        pos = node._start;
     var d = node.decimal ? node.decimal.digits.join('') : '',
         exp = '';
     if ( node.exponent ) {
@@ -153,7 +153,7 @@ function t_build_object(pairs) {
             positions[key] = [];
             obj[key] = p.value[1];
         }
-        positions[key].push(pair.key._state);
+        positions[key].push(pair.key._start);
     });
     for (var key in seen_twice) {
         errors.push(make_error('object', 'duplicate key', key, positions[key]));
@@ -183,7 +183,7 @@ var TOP_LEVEL = {'array': 1, 'object': 1},
 function t_json(node) {
     var val = t_value(node.value);
     if ( !TOP_LEVEL.hasOwnProperty(node.value._name) ) {
-        val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._state));
+        val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._start));
     }
     return val;
 }

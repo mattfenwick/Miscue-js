@@ -45,6 +45,11 @@ function Attribute(key, value) {
     } else {
         throw new Error('illegal key -- ' + key);
     }
+    if ( ( value === null ) || ( typeof value === 'string' ) ) {
+        // we're cool
+    } else {
+        throw new Error('illegal value -- ' + value);
+    }
     this.value = value; // anything?  can even be empty?
 }
 

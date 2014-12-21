@@ -33,14 +33,30 @@ function elem(name, attrs, kids) {
 module.exports = {
     'root'    : root,
     'comment' : function(text) {return new model.Comment(text);},
+
     'html'  : tag('html'),
+    'title' : tag('title'),
     'body'  : tag('body'),
     'head'  : tag('head'),
+
     'div'   : tag('div'),
-    'td'    : tag('td'),
-    'th'    : tag('th'),
-    'tr'    : tag('tr'),
+    'p'     : tag('p')  ,
+    'pre'   : tag('pre'),
+    
+    'ul'    : tag('ul'),
+    'ol'    : tag('ol'),
+    'li'    : tag('li'),
+
     'table' : tag('table'),
-    'elem'  : elem
+    'tr'    : tag('tr'),
+    'th'    : tag('th'),
+    'td'    : tag('td'),
+    'tbody' : tag('tbody'),
+    'tfoot' : tag('tfoot'),
+    'thead' : tag('thead'),
+    
+    // escape hatches
+    'tag'   : tag,
+    'elem'  : elem,
 };
 
