@@ -1,6 +1,6 @@
 {
   "name": "Miscue-js",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "scripts": {
     "test": "grunt --force",
     "bundle": "browserify main.js > build/bundle.js"
