@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
 var Val = require('jsonlint-js');
@@ -9527,7 +9527,7 @@ var u = require('unparse-js'),
     C = u.combinators,
     Cst = u.cst;
 
-var pos     = C.position,
+const pos     = C.position,
     item    = pos.item,
     literal = pos.literal,
     satisfy = pos.satisfy,
@@ -9535,95 +9535,84 @@ var pos     = C.position,
     not1    = pos.not1,
     string  = pos.string,
     node    = Cst.node,
-    cut     = Cst.cut,
-    sepBy0  = Cst.sepBy0,
-    addError = Cst.addError;
+    addErrorState = Cst.addErrorState,
+    cut     = Cst.cut;
+
+const many0 = C.many0, optional = C.optional,
+    pure  = C.pure , app      = C.app,
+    many1 = C.many1, seq      = C.seq,
+    alt   = C.alt  , error    = C.error,
+    seq2L = C.seq2L, repeat   = C.repeat,
+    bind  = C.bind , sepBy0   = C.sepBy0,
+    not0  = C.not0;
+
+const whitespace = many0(oneOf(' \t\n\r'));
     
-var many0 = C.many0, optional = C.optional,
-    pure  = C.pure , seq2R = C.seq2R,
-    many1 = C.many1, seq   = C.seq,  alt   = C.alt,
-    seq2L = C.seq2L, not0  = C.not0, error = C.error,
-    bind  = C.bind;
-
-function quantity(p, num) {
-    var parsers = [];
-    for(var i = 0; i < num; i++) {
-        parsers.push(p);
-    }
-    return seq.apply(undefined, parsers);
-}
-
-var whitespace = many0(oneOf(' \t\n\r')),
+const _digit = oneOf('0123456789');
     
-    _digit = oneOf('0123456789'),
+const _digits = many1(_digit);
+
+const _decimal = node('decimal',
+    ['dot', literal('.')],
+    ['digits', cut('digits', _digits)]);
+
+const _exponent = node('exponent',
+    ['letter', oneOf('eE')         ],
+    ['sign', optional(oneOf('+-')) ],
+    ['power', cut('power', _digits)]);
+
+const _integer = addErrorState('invalid leading 0',
+    bind(_digits,
+         (ds) => (ds[0] === '0' && ds.length > 1) ? error([]) : pure(ds)));
+
+const _number_1 = node('number',
+    ['sign', literal('-')              ],
+    ['integer', cut('digits', _integer)],
+    ['decimal', optional(_decimal)     ],
+    ['exponent', optional(_exponent)   ]);
+
+const _number_2 = node('number',
+    ['sign', pure(null)             ], // to match _number_1's schema
+    ['integer', _integer            ],
+    ['decimal', optional(_decimal)  ],
+    ['exponent', optional(_exponent)]);
+
+// there are two number patterns solely to get the error reporting right
+//   if there's a `-` but a number can't be parsed, that's an error
+const _number = alt([_number_1, _number_2]);
+
+
+const _control = addErrorState('invalid control character',
+    seq([satisfy((c) => c.charCodeAt() < 32),
+         error([])]));
     
-    _digits = many1(_digit),
+const _char = node('character',
+    ['value', not1(alt([oneOf('\\"'), _control]))]);
 
-    _decimal = node('decimal',
-                    ['dot', literal('.')],
-                    ['digits', cut('digits', _digits)]),
-                    
-    _exponent = node('exponent',
-                     ['letter', oneOf('eE')         ],
-                     ['sign', optional(oneOf('+-')) ],
-                     ['power', cut('power', _digits)]),
-    
-    _integer = addError('invalid leading 0',
-                        bind(_digits,
-                             function(ds) {
-                                 if ( ds[0] === '0' && ds.length > 1 ) {
-                                     return error([]);
-                                 }
-                                 return pure(ds);
-                             })),
+const _escape = node('escape',
+    ['open', literal('\\')                            ],
+    ['value', cut('simple escape', oneOf('"\\/bfnrt'))]);
 
-    _number_1 = node('number',
-                     ['sign', literal('-')              ],
-                     ['integer', cut('digits', _integer)],
-                     ['decimal', optional(_decimal)     ],
-                     ['exponent', optional(_exponent)   ]),
+const _hexC = oneOf('0123456789abcdefABCDEF');
 
-    _number_2 = node('number',
-                     ['sign', pure(null)             ], // to match _number_1's schema
-                     ['integer', _integer            ],
-                     ['decimal', optional(_decimal)  ],
-                     ['exponent', optional(_exponent)]),
+const _unic = node('unicode escape',
+    ['open', string('\\u')                                 ],
+    ['value', cut('4 hexadecimal digits', repeat(4, _hexC))]);
 
-    // there are two number patterns solely to get the error reporting right
-    //   if there's a `-` but a number can't be parsed, that's an error
-    _number = alt(_number_1, _number_2);
+const _jsonstring = node('string',
+    ['open', literal('"')                        ],
+    ['value', many0(alt([_char, _unic, _escape]))],
+    ['close', cut('double-quote', literal('"'))  ]);
 
-
-var _control = addError('invalid control character',
-                   seq(satisfy(function(c) {return c.charCodeAt() < 32;}), error([]))),
-    
-    _char = node('character',
-                 ['value', not1(alt(oneOf('\\"'), _control))]),
-
-    _escape = node('escape',
-                   ['open', literal('\\')                            ],
-                   ['value', cut('simple escape', oneOf('"\\/bfnrt'))]),
-
-    _hexC = oneOf('0123456789abcdefABCDEF'),
-
-    _unic = node('unicode escape',
-                 ['open', string('\\u')                                   ],
-                 ['value', cut('4 hexadecimal digits', quantity(_hexC, 4))]),
-
-    _jsonstring = node('string',
-                       ['open', literal('"')                      ],
-                       ['value', many0(alt(_char, _unic, _escape))],
-                       ['close', cut('double-quote', literal('"'))]),
-
-    _keyword = node('keyword',
-                    ['value', alt(string('true'), string('false'), string('null'))]);
+const _keyword = node('keyword',
+    ['value', alt([string('true'), string('false'), string('null')])]);
 
 
 function tok(parser) {
     return seq2L(parser, whitespace);
 }
 
-var jsonstring = tok(_jsonstring),
+const jsonstring = tok(_jsonstring),
     number     = tok(_number),
     keyword    = tok(_keyword),
     os         = tok(literal('[')),
@@ -9633,31 +9622,33 @@ var jsonstring = tok(_jsonstring),
     comma      = tok(literal(',')),
     colon      = tok(literal(':'));
 
-var obj = error('unimplemented'),
-    array = error('unimplemented');
+const obj = error('unimplemented');
+const array = error('unimplemented');
 
-var value = alt(jsonstring, number, keyword, obj, array),
+const value = alt([jsonstring, number, keyword, obj, array]);
 
-    keyVal = node('key/value pair',
-                  ['key', jsonstring           ],
-                  ['colon', cut('colon', colon)],
-                  ['value', cut('value', value)]);
+const keyVal = node('key/value pair',
+    ['key', jsonstring           ],
+    ['colon', cut('colon', colon)],
+    ['value', cut('value', value)]);
 
 array.parse = node('array',
-                   ['open', os                  ],
-                   ['body', sepBy0(value, comma)],
-                   ['close', cut('close', cs)   ]).parse;
+    ['open', os                  ],
+    ['body', sepBy0(value, comma)],
+    ['close', cut('close', cs)   ]).parse;
 
 obj.parse = node('object',
-                 ['open', oc                   ],
-                 ['body', sepBy0(keyVal, comma)],
-                 ['close', cut('close', cc)    ]).parse;
+    ['open', oc                   ],
+    ['body', sepBy0(keyVal, comma)],
+    ['close', cut('close', cc)    ]).parse;
 
-var _json = node('json',
-                 ['value', value]), // alt(obj, array)),
+const _json = node('json',
+    ['value', value]); // alt([obj, array])),
 
-    json = seq2L(seq2R(whitespace, cut('json value', _json)),
-                 cut('unparsed input remaining', not0(item)));
+const json = app((_1, v, _2) => v, 
+    whitespace,
+    cut('json value', _json),
+    cut('unparsed input remaining', not0(item)));
 
 module.exports = {
     'json'   : json,
@@ -9692,15 +9683,19 @@ module.exports = {
 
 "use strict";
 
-var _escapes = {'"': '"',  '\\': '\\',
-                '/': '/',  'b': '\b' ,
-                'f': '\f', 'n': '\n' ,
-                'r': '\r', 't': '\t'  };
+const _escapes = new Map([
+        ['"' , '"' ],
+        ['\\', '\\'],
+        ['/' , '/' ],  
+        ['b' , '\b'],
+        ['f' , '\f'], 
+        ['n' , '\n'],
+        ['r' , '\r'],
+        ['t' , '\t']
+    ]);
 
 function concat(first, second) {
-    second.map(function(e) {
-        first.push(e);
-    });
+    second.forEach((e) => first.push(e));
 }
 
 function make_error(element, message, text, position) {
@@ -9724,20 +9719,20 @@ function unicode(val) {
 }
 
 function escape(val) {
-    if ( !(val in _escapes) ) {
+    if ( !_escapes.has(val)) {
         throw new Error('invalid character escape -- ' + val);
     }
-    return _escapes[val];
+    return _escapes.get(val);
 }
 
-var _chars = {
-    'escape': escape,
-    'unicode escape': unicode,
-    'character': function(c) {return c;}
-};
+var _chars = new Map([
+    ['escape', escape],
+    ['unicode escape', unicode],
+    ['character', (c) => c]
+]);
 
 function t_char(node) {
-    return _chars[node._name](node.value);
+    return _chars.get(node._name)(node.value);
 }
 
 function t_string(node) {
@@ -9784,23 +9779,28 @@ function t_number(node) {
     return ret_err(errors, num);
 }
 
-var _keywords = {
-        'true' : true,
-        'false': false,
-        'null' : null
-    };
+const _keywords = new Map([
+        ['true' , true ],
+        ['false', false],
+        ['null' , null ]
+    ]);
 
 function t_keyword(node) {
-    if ( node.value in _keywords ) {
-        return ret_err([], _keywords[node.value]);
+    if ( _keywords.has(node.value) ) {
+        return ret_err([], _keywords.get(node.value));
     }
     throw new Error('invalid keyword -- ' + node.value);
+}
+
+function extractValues(body) {
+    return (body !== null) ? [body[0]].concat(body[1].map(([_, v]) => v)) : [];
 }
 
 function t_array(node) {
     var errors = [],
         vals = [];
-    node.body.values.map(function(v) {
+    const values = extractValues(node.body);
+    values.forEach(function(v) {
         var e = t_value(v);
         concat(errors, e.errors);
         vals.push(e.value);
@@ -9821,48 +9821,49 @@ function t_pair(node) {
 function t_build_object(pairs) {
     var errors = [],
         obj = {},
-        positions = {},
-        seen_twice = {};
-    pairs.map(function(pair) {
+        positions = new Map(),
+        seenTwice = new Set();
+    pairs.forEach(function(pair) {
         var p = t_pair(pair),
             key = p.value[0];
         concat(errors, p.errors);
-        if ( key in positions ) {
-            seen_twice[key] = true;
+        if ( positions.has(key) ) {
+            seenTwice.add(key);
         } else {
-            positions[key] = [];
+            positions.set(key, []);
             obj[key] = p.value[1];
         }
-        positions[key].push(pair.key._start);
+        positions.get(key).push(pair.key._start);
     });
-    for (var key in seen_twice) {
-        errors.push(make_error('object', 'duplicate key', key, positions[key]));
-    }
+    seenTwice.forEach(function (key) {
+        errors.push(make_error('object', 'duplicate key', key, positions.get(key)));
+    });
     return ret_err(errors, obj);
 }
 
 function t_object(node) {
-    return t_build_object(node.body.values); // what about the object position?
+    const values = extractValues(node.body);
+    return t_build_object(values); // what about the object position?
 }
 
-var NODE_ACTIONS = {
-        'keyword': t_keyword,
-        'number' : t_number ,
-        'string' : t_string ,
-        'array'  : t_array  ,
-        'object' : t_object
-    };
+const NODE_ACTIONS = new Map([
+        ['keyword', t_keyword],
+        ['number' , t_number ],
+        ['string' , t_string ],
+        ['array'  , t_array  ],
+        ['object' , t_object ]
+    ]);
 
 function t_value(node) {
-    return NODE_ACTIONS[node._name](node);
+    return NODE_ACTIONS.get(node._name)(node);
 }
 
-var TOP_LEVEL = {'array': 1, 'object': 1},
-    TOP_LEVEL_WARNING = 'top-level element should be object or array';
+const TOP_LEVEL = new Set(['array', 'object']);
+const TOP_LEVEL_WARNING = 'top-level element should be object or array';
 
 function t_json(node) {
     var val = t_value(node.value);
-    if ( !TOP_LEVEL.hasOwnProperty(node.value._name) ) {
+    if ( !TOP_LEVEL.has(node.value._name) ) {
         val.errors.push(make_error(node._name, TOP_LEVEL_WARNING, '', node._start));
     }
     return val;
@@ -9886,32 +9887,31 @@ module.exports = {
     'maybeerror' : require('./lib/maybeerror.js') ,
     'combinators': require('./lib/combinators.js'),
     'cst'        : require('./lib/cst.js'),
+    'operators'  : require('./lib/operators.js'),
     
-    '__version__': '0.1.6'
+    '__version__': '0.3.0'
 };
 
 
-},{"./lib/combinators.js":14,"./lib/cst.js":15,"./lib/maybeerror.js":16}],14:[function(require,module,exports){
+},{"./lib/combinators.js":14,"./lib/cst.js":15,"./lib/maybeerror.js":17,"./lib/operators.js":18}],14:[function(require,module,exports){
 "use strict";
 
-var M = require('./maybeerror.js');
+const M = require('./maybeerror.js');
+const F = require('./functions.js');
 
 
+// ([t] -> s -> MaybeError e ([t], s, a)) -> Parser e s (m t) a
 function Parser(f) {
-    /*
-    A wrapper around a callable of type `[t] -> s -> ME ([t], s, a)`.
-    Run the parser using the `parse` method.
-    */
     this.parse = f;
 }
 
 function checkFunction(fName, actual) {
     if ( typeof actual !== 'function' ) {
-        var obj = {
+        const obj = {
             'message' : 'type error',
             'function': fName,
             'expected': 'function',
-            'actual'  : actual
+            'actual'  : F.debugString(actual)
         };
         throw new Error(JSON.stringify(obj));
     }
@@ -9920,11 +9920,11 @@ function checkFunction(fName, actual) {
 
 function checkParser(fName, actual) {
     if ( !(actual instanceof Parser) ) {
-        var obj = {
+        const obj = {
             'message' : 'type error',
             'function': fName,
             'expected': 'Parser',
-            'actual'  : actual
+            'actual'  : F.debugString(actual)
         };
         throw new Error(JSON.stringify(obj));
     }
@@ -9939,142 +9939,81 @@ function good(value, rest, state) {
     return M.pure(result(value, rest, state));
 }
 
-function compose(f, g) {
-    return function(x) { return f(g(x)); };
+
+// a -> Parser e s (m t) a
+function pure(x) {
+    return new Parser((xs, s) => good(x, xs, s));
 }
 
+// Parser e s (m t) a
+const zero = new Parser(F.constF(M.zero));
 
+// e -> Parser e s (m t) a
+function error(e) {
+    return new Parser(F.constF(M.error(e)));
+}
+
+// (a -> b) -> Parser e s (m t) a -> Parser e s (m t) b
 function fmap(g, parser) {
-    /*
-    (a -> b) -> Parser e s (m t) a -> Parser e s (m t) b
-    */
     checkParser('fmap', parser);
     checkFunction('fmap', g);
     function h(r) {
         return result(g(r.result), r.rest, r.state);
     }
-    function f(xs, s) {
-        return parser.parse(xs, s).fmap(h);
-    }
-    return new Parser(f);
+    return new Parser((xs, s) => parser.parse(xs, s).fmap(h));
 }
 
-function pure(x) {
-    /*
-    a -> Parser e s (m t) a
-    */
-    function f(xs, s) {
-        return good(x, xs, s);
-    }
-    return new Parser(f);
-}
-
+// Parser e s (m t) a -> (a -> Parser e s (m t) b) -> Parser e s (m t) b
 function bind(parser, g) {
-    /*
-    Parser e s (m t) a -> (a -> Parser e s (m t) b) -> Parser e s (m t) b
-    */
     checkParser('bind', parser);
     checkFunction('bind', g);
     function f(xs, s) {
-        var r = parser.parse(xs, s),
+        const r = parser.parse(xs, s),
             val = r.value;
-        if ( r.status === 'success' ) {
-            return g(val.result).parse(val.rest, val.state);
-        } else {
-            return r;
-        }
+        return (r.status === 'success') ? g(val.result).parse(val.rest, val.state) : r;
     }
     return new Parser(f);
 }
 
-function error(e) {
-    /*
-    e -> Parser e s (m t) a
-    */
-    function f(_xs_, _s_) {
-        return M.error(e);
-    }
-    return new Parser(f);
-}
-
-function catchError(f, parser) {
-    /*
-    Parser e s (m t) a -> (e -> Parser e s (m t) a) -> Parser e s (m t) a
-    */
-    checkFunction('catchError', f);
-    checkParser('catchError', parser);
-    function g(xs, s) {
-        var v = parser.parse(xs, s);
-        if ( v.status === 'error' ) {
-            return f(v.value).parse(xs, s);
-        }
-        return v;
-    }
-    return new Parser(g);
-}
-
-function mapError(f, parser) {
-    /*
-    Parser e s (m t) a -> (e -> e) -> Parser e s (m t) a
-    */
-    checkFunction('mapError', f);
-    checkParser('mapError', parser);
-    return catchError(compose(error, f), parser);
-}
-
-function put(xs) {
-    /*
-    m t -> Parser e s (m t) a
-    */
-    function f(_xs_, s) {
-        return good(null, xs, s);
-    }
-    return new Parser(f);
-}
-
-function putState(s) {
-    /*
-    s -> Parser e s (m t) a
-    */
-    function f(xs, _s_) {
-        return good(null, xs, s);
-    }
-    return new Parser(f);
-}
-
-function updateState(g) {
-    /*
-    (s -> s) -> Parser e s (m t) a
-    */
-    checkFunction('updateState', g);
-    function f(xs, s) {
-        return good(null, xs, g(s));
-    }
-    return new Parser(f);
-}
-
+// (a -> Bool) -> Parser e s (m t) a -> Parser e s (m t) a
 function check(predicate, parser) {
-    /*
-    (a -> Bool) -> Parser e s (m t) a -> Parser e s (m t) a
-    */
     checkFunction('check', predicate);
     checkParser('check', parser);
-    function f(xs, s) {
-        var r = parser.parse(xs, s);
-        if ( r.status !== 'success' ) {
-            return r;
-        } else if ( predicate(r.value.result) ) {
-            return r;
-        }
-        return M.zero;
-    }
-    return new Parser(f);
+    return bind(parser, (value) => predicate(value) ? pure(value) : zero);
 }
 
+// (m t -> m t) -> Parser e s (m t) (m t)
+function update(f) {
+    checkFunction('update', f);
+    return new Parser(function(xs, s) {
+        const ys = f(xs);
+        return good(ys, ys, s);
+    });
+}
+
+// Parser e s (m t) (m t)
+const get = update(F.id);
+
+// m t -> Parser e s (m t) (m t)
+const put = F.compose(update, F.constF);
+
+// (s -> s) -> Parser e s (m t) s
+function updateState(g) {
+    checkFunction('updateState', g);
+    return new Parser(function(xs, s) {
+        const newState = g(s);
+        return good(newState, xs, newState);
+    });
+}
+
+// Parser e s (m t) s
+const getState = updateState(F.id);
+
+// s -> Parser e s (m t) s
+const putState = F.compose(updateState, F.constF);
+
+// Parser e s (m t) a -> Parser e s (m t) [a]
 function many0(parser) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) [a]
-    */
     checkParser('many0', parser);
     function f(xs, s) {
         var vals = [],
@@ -10097,30 +10036,21 @@ function many0(parser) {
     return new Parser(f);
 }
 
+// Parser e s (m t) a -> Parser e s (m t) [a]
 function many1(parser) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) [a]
-    */
     checkParser('many1', parser);
-    return check(function(x) {return x.length > 0;}, many0(parser));
+    return check((x) => x.length > 0, many0(parser));
 }
 
-function _get_args(args, ix) {
-    return Array.prototype.slice.call(args, ix);
-}
-
-function seq() {
-    /*
-    [Parser e s (m t) a] -> Parser e s (m t) [a]
-    */
-    var parsers = _get_args(arguments, 0);
-    parsers.map(checkParser.bind(null, 'seq')); // can I use `forEach` here instead of `map`?
+// [Parser e s (m t) a] -> Parser e s (m t) [a]
+function seq(parsers) {
+    parsers.forEach(checkParser.bind(null, 'seq'));
     function f(xs, s) {
         var vals = [],
             state = s,
             tokens = xs,
             r;
-        for(var i = 0; i < parsers.length; i++) {
+        for (var i = 0; i < parsers.length; i++) {
             r = parsers[i].parse(tokens, state);
             if ( r.status === 'success' ) {
                 vals.push(r.value.result);
@@ -10135,62 +10065,55 @@ function seq() {
     return new Parser(f);
 }
 
-function app(f) {
-    var parsers = _get_args(arguments, 1);
-    checkFunction('app', f);
-    parsers.map(checkParser.bind(null, 'app')); // can I use `forEach` here as well?
-    function g(args) {
-        return f.apply(undefined, args);
-    }
-    return fmap(g, seq.apply(undefined, parsers));
+// Parser e s (m t) (a -> ... -> z) -> Parser e s (m t) a -> ... -> Parser e s (m t) z
+function appP(p, ...parsers) {
+    checkParser('appP', p);
+    parsers.forEach(checkParser.bind(null, 'appP'));
+    return bind(p, function(f) {
+        return fmap((args) => f(...args), seq(parsers));
+    });
 }
 
-function _first(x, _) {
-    return x;
+// (a -> ... -> z) -> Parser e s (m t) a -> ... -> Parser e s (m t) z
+function app(f, ...args) {
+    return appP(pure(f), ...args);
 }
 
-function _second(_, y) {
-    return y;
-}
-
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) a
 function seq2L(p1, p2) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) a
-    */
     checkParser('seq2L', p1);
     checkParser('seq2L', p2);
-    return app(_first, p1, p2);
+    return app(F.first, p1, p2);
 }
 
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) b
 function seq2R(p1, p2) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) b
-    */
     checkParser('seq2R', p1);
     checkParser('seq2R', p2);
-    return app(_second, p1, p2);
+    return app(F.second, p1, p2);
 }
 
+// Int -> Parser e s (m t) a -> Parser e s (m t) [a]
+function repeat(count, parser) {
+    checkParser('repeat', parser);
+    return seq(F.replicate(count, parser));
+}
+
+// Parser e s (m t) a -> Parser e s (m t) a
 function lookahead(parser) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) None
-    */
     checkParser('lookahead', parser);
     return bind(get, function(xs) {
         return bind(getState, function(s) {
-            return seq2L(parser,
-                         seq(put(xs), putState(s)));
+            return app((a, _1, _2) => a, parser, put(xs), putState(s));
         });
     });
 }
 
+// Parser e s (m t) a -> Parser e s (m t) ()
 function not0(parser) {
-    /*
-    Parser e s (m t) a -> Parser e s (m t) None
-    */
     checkParser('not0', parser);
     function f(xs, s) {
-        var r = parser.parse(xs, s);
+        const r = parser.parse(xs, s);
         if ( r.status === 'error' ) {
             return r;
         } else if ( r.status === 'success' ) {
@@ -10202,186 +10125,127 @@ function not0(parser) {
     return new Parser(f);
 }
 
-function alt() {
-    /*
-    [Parser e s (m t) a] -> Parser e s (m t) a
-    */
-    var parsers = _get_args(arguments, 0);
-    parsers.map(checkParser.bind(null, 'alt')); // use `forEach` here, too?
+// [Parser e s (m t) a] -> Parser e s (m t) a
+function alt(parsers) {
+    parsers.forEach(checkParser.bind(null, 'alt'));
     function f(xs, s) {
-        var r = M.zero;
-        for(var i = 0; i < parsers.length; i++) {
-            r = parsers[i].parse(xs, s);
+        for (var i = 0; i < parsers.length; i++) {
+            const r = parsers[i].parse(xs, s);
             if ( r.status === 'success' || r.status === 'error' ) {
                 return r;
             }
         }
-        return r;
+        return M.zero;
     }
     return new Parser(f);
 }
 
-function optional(parser, default_v) {
-    /*
-    Parser e s (m t) a -> a -> Parser e s (m t) a
-    */
-    // `default_v` is optional
-    //   change undefineds to nulls to help distinguish accidents
-    if ( typeof default_v === 'undefined' ) {
-        default_v = null;
-    }
+// Parser e s (m t) a -> a -> Parser e s (m t) a
+function optional(parser, defaultValue = null) {
     checkParser('optional', parser);
-    return alt(parser, pure(default_v));
+    return alt([parser, pure(defaultValue)]);
 }
 
+// Parser e s (m t) a -> (e -> Parser e s (m t) a) -> Parser e s (m t) a
+function catchError(parser, f) {
+    checkParser('catchError', parser);
+    checkFunction('catchError', f);
+    return new Parser(function(xs, s) {
+        const v = parser.parse(xs, s);
+        return (v.status === 'error') ? f(v.value).parse(xs, s) : v;
+    });
+}
+
+// (e -> e) -> Parser e s (m t) a -> Parser e s (m t) a
+function mapError(f, parser) {
+    checkFunction('mapError', f);
+    checkParser('mapError', parser);
+    return catchError(parser, F.compose(error, f));
+}
+
+// e -> Parser e s (m t) a -> Parser e s (m t) a
 function commit(e, parser) {
-    /*
-    Parser e s (m t) a -> e -> Parser e s (m t) a
-    */
     checkParser('commit', parser);
-    return alt(parser, error(e));
+    return alt([parser, error(e)]);
 }
 
-// Parser e s (m t) a
-var zero = new Parser(function(_xs_, _s_) {return M.zero;});
-
-// Parser e s (m t) (m t)
-var get = new Parser(function(xs, s) {return good(xs, xs, s);});
-
-// Parser e s (m t) s
-var getState = new Parser(function(xs, s) {return good(s, xs, s);});
-
-
-function _build_set(elems) {
-    var obj = {};
-    for(var i = 0; i < elems.length; i++) {
-        obj[elems[i]] = 1;
-    }
-    return obj;
+// e -> Parser [e] s (m t) a -> Parser [e] s (m t) a
+function addError(e, parser) {
+    checkParser('addError', parser);
+    return mapError(errors => F.cons(e, errors), parser);
 }
 
-/*
-item :: Parser e s (m t) t
-`item` is the most basic parser and should:
- - succeed, consuming one single token if there are any tokens left
- - fail if there are no tokens left
-*/
-function Itemizer(item) {
-    checkParser('Itemizer', item);
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (a, [(b, a)])
+function sepBy1(parser, separator) {
+    return app(F.pair, parser, many0(app(F.pair, separator, parser)));
+}
+
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (Maybe (a, [(b, a)]))
+function sepBy0(parser, separator) {
+    return optional(sepBy1(parser, separator));
+}
+
+
+function itemizer(f) {
+    checkFunction('itemizer', f);
     
-    function literal(x) {
-        /*
-        Eq t => t -> Parser e s (m t) t
-        */
-        return check(function(y) {return x === y;}, item); // what about other notions of equality ??
-    }
+    // Parser e s (m t) t
+    const item = new Parser(function(xs, s) {
+            if ( xs.length === 0 ) {
+                return M.zero;
+            }
+            const first = xs[0],
+                rest = xs.slice(1);
+            return good(first, rest, f(first, s));
+        });
     
+    // (t -> Bool) -> Parser e s (m t) t
     function satisfy(pred) {
-        /*
-        (t -> Bool) -> Parser e s (m t) t
-        */
         checkFunction('satisfy', pred);
         return check(pred, item);
     }
     
+    // Eq t => t -> Parser e s (m t) t
+    function literal(x) {
+        return satisfy((y) => x === y);
+    }
+    
+    // Parser e s (m t) a -> Parser e s (m t) t
     function not1(parser) {
-        /*
-        Parser e s (m t) a -> Parser e s (m t) t
-        */
         checkParser('not1', parser);
         return seq2R(not0(parser), item);
     }
 
+    // Eq t => [t] -> Parser e s (m t) [t] 
     function string(elems) {
-        /*
-        Eq t => [t] -> Parser e s (m t) [t] 
-        */
-        var ps = [];
-        for(var i = 0; i < elems.length; i++) { // have to do this b/c strings don't have a `map` method
-            ps.push(literal(elems[i]));
-        }
-        var matcher = seq.apply(undefined, ps);
+        // this allows a string to be passed in
+        const matcher = seq(Array.from(elems).map(literal));
         return seq2R(matcher, pure(elems));
     }
     
+    // Eq t => Set t -> Parser e s (m t) t
     function oneOf(elems) {
-        var c_set = _build_set(elems);
-        return satisfy(function(x) {
-            return c_set.hasOwnProperty(x); // TODO use actual set
-        });
+        const charSet = new Set(elems);
+        return satisfy((x) => charSet.has(x));
     }
     
     return {
         'item'   :  item,
         'literal':  literal,
         'satisfy':  satisfy,
-        'string' :  string,
         'not1'   :  not1,
+        'string' :  string,
         'oneOf'  :  oneOf
     };
 }
 
 
-function _item_basic(xs, s) {
-    /*
-    Simply consumes a single token if one is available, presenting that token
-    as the value.  Fails if token stream is empty.
-    */
-    if ( xs.length === 0 ) {
-        return M.zero;
-    }
-    var first = xs[0],
-        rest = xs.slice(1);
-    return good(first, rest, s);
-}
-
-
-function _bump(char, position) {
-    /*
-    only treats `\n` as newline
-    */
-    var line = position[0],
-        col = position[1];
-    if ( char === '\n' ) {
-        return [line + 1, 1];
-    }
-    return [line, col + 1];
-}
-
-function _item_position(xs, position) {
-    /*
-    Assumes that the state is a 2-tuple of integers, (line, column).
-    Does two things:
-      1. see `_item_basic`
-      2. updates the line/col position in the parsing state
-    */
-    if ( xs.length === 0 ) {
-        return M.zero;
-    }
-    var first = xs[0],
-        rest = xs.slice(1);
-    return good(first, rest, _bump(first, position));
-}
-
-
-function _item_count(xs, ct) {
-    /*
-    Does two things:
-      1. see `_item_basic`
-      2. increments a counter -- which tells how many tokens have been consumed
-    */
-    if ( xs.length === 0 ) {
-        return M.zero;
-    }
-    var first = xs[0],
-        rest = xs.slice(1);
-    return good(first, rest, ct + 1);
-}
-
-
-var basic    = Itemizer(new Parser(_item_basic)),
-    position = Itemizer(new Parser(_item_position)),
-    count    = Itemizer(new Parser(_item_count));
+// doesn't do anything to the state
+const basic = itemizer(F.second);
+// assumes the state is a 2-tuple of integers (line, column)
+const position = itemizer(F.updatePosition);
+// assumes that state is an integer -- how many tokens have been consumed
+const count = itemizer((_, s) => s + 1);
 
 
 function run(parser, input_string, state) {
@@ -10394,258 +10258,373 @@ function run(parser, input_string, state) {
 
 module.exports = {
     'Parser'     : Parser,
-    'Itemizer'   : Itemizer,
+    'itemizer'   : itemizer,
     
-    'fmap'       : fmap,
     'pure'       : pure,
-    'bind'       : bind,
+    'zero'       : zero,
     'error'      : error,
-    'catchError' : catchError,
-    'mapError'   : mapError,
-    'put'        : put,
-    'putState'   : putState,
-    'updateState': updateState,
+
+    'fmap'       : fmap,
+    'bind'       : bind,
     'check'      : check,
+
+    'update'     : update,
+    'get'        : get,
+    'put'        : put,
+    'updateState': updateState,
+    'getState'   : getState,
+    'putState'   : putState,
+
     'many0'      : many0,
     'many1'      : many1,
     'seq'        : seq,
+    'appP'       : appP,
     'app'        : app,
-    'optional'   : optional,
     'seq2L'      : seq2L,
     'seq2R'      : seq2R,
+    'repeat'     : repeat,
+
     'lookahead'  : lookahead,
     'not0'       : not0,
-    'commit'     : commit,
     'alt'        : alt,
-    'zero'       : zero,
-    'get'        : get,
-    'getState'   : getState,
+    'optional'   : optional,
+
+    'catchError' : catchError,
+    'mapError'   : mapError,
+    'commit'     : commit,
+    'addError'   : addError,
+
+    'sepBy1'     : sepBy1,
+    'sepBy0'     : sepBy0,
     
     'basic'      : basic,
     'position'   : position,
     'count'      : count,
     
-    'run'        : run
+    'run'          : run,
+    'checkFunction': checkFunction,
+    'checkParser'  : checkParser,
+    'good'         : good
 };
 
 
-},{"./maybeerror.js":16}],15:[function(require,module,exports){
+},{"./functions.js":16,"./maybeerror.js":17}],15:[function(require,module,exports){
 "use strict";
 
-var C = require('./combinators.js');
-
-
-var bind   = C.bind  ,  getState = C.getState,
-    commit = C.commit,  mapError = C.mapError,
-    app    = C.app   ,  many0    = C.many0   ,
-    seq    = C.seq   ,  optional = C.optional,
-    fmap     = C.fmap;
-
-function cut(message, parser) {
-    /*
-    assumes errors are lists
-    */
-    function f(p) {
-        return commit([[message, p]], parser);
-    }
-    return bind(getState, f);
-}
-
-// probably not the optimal way to do this
-function _cons(first, rest) {
-    var copy = rest.slice();
-    copy.unshift(first);
-    return copy;
-}
-
-function addError(e, parser) {
-    /*
-    assumes errors are lists, and
-    that the state is desired
-    */
-    function f(pos) {
-        return mapError(function(es) {return _cons([e, pos], es);}, parser);
-    }
-    return bind(getState, f);
-}
-
+const C = require('./combinators.js');
+const F = require('./functions.js');
 
 function _forbid_duplicates(arr) {
-    var keys = {};
-    for(var i = 0; i < arr.length; i++) {
-        if ( arr[i] in keys ) {
-            throw new Error('duplicate name -- ' + arr[i]);
+    const keySet = new Set();
+    arr.forEach(function(key) {
+        if ( keySet.has(key) ) {
+            throw new Error('duplicate name -- ' + key);
         }
-        keys[arr[i]] = 1;
-    }
-    return false;
-}
-
-function _set(arr) {
-    var keys = {};
-    for(var i = 0; i < arr.length; i++) {
-        keys[arr[i]] = 1;
-    }
-    return keys;
-}
-
-function _dict(arr) {
-    var obj = {};
-    arr.map(function(p) {
-        obj[p[0]] = p[1];
+        keySet.add(key);
     });
-    return obj;
 }
 
 function _forbid_keys(forbidden, keys) {
-    var key_set = _set(keys);
-    forbidden.map(function(key) {
-        if ( key in key_set ) {
+    const keySet = new Set(keys);
+    forbidden.forEach(function(key) {
+        if ( keySet.has(key) ) {
             throw new Error('cst node: forbidden key: ' + key);
         }
     });
 }
 
-function node(name, _pairs_ /* 0+ 2-element arrays */) {
+// e -> Parser [(e, s)] s (m t) a -> Parser [(e, s)] s (m t) a
+function cut(message, parser) {
+    C.checkParser('cut', parser);
+    return C.bind(C.getState, (state) => C.commit([[message, state]], parser));
+}
+
+// e -> Parser [(e, s)] s (m t) a -> Parser [(e, s)] s (m t) a
+function addErrorState(e, parser) {
+    return C.bind(C.getState, (state) => C.addError([e, state], parser));
+}
+
+function node(name, ...pairs) {
     /*
+    _pairs_: 0+ 2-element arrays
     1. runs parsers in sequence
     2. collects results into a dictionary
     3. grabs state at which parsers started
     4. adds an error frame
     */
-    var pairs = Array.prototype.slice.call(arguments, 1),
-        names = pairs.map(function(x) {return x[0];});
+    const names = pairs.map((x) => x[0]);
     _forbid_duplicates(names);
     _forbid_keys(['_name', '_start', '_end'], names);
     function action(start, results, end) {
-        var out = _dict(results);
+        const out = F.dict(results);
         out._start = start;
         out._name = name;
         out._end = end;
         return out;
     }
-    function closure_workaround(s) { // captures s
-        return function(y) {return [s, y];};
-    }
-    function f(pair) {
-        var s = pair[0],
-            p = pair[1];
-        return fmap(closure_workaround(s), p);
-    }
-    return addError(name,
-                    app(action,
-                          getState,
-                          seq.apply(undefined, pairs.map(f)),
-                          getState));
-}
-
-function _sep_action(fst, pairs) {
-    var vals = [fst],
-        seps = [];
-    pairs.map(function(p) {
-        var sep = p[0],
-            val = p[1];
-        vals.push(val);
-        seps.push(sep);
-    });
-    return {
-        'values': vals,
-        'separators': seps
-    };
-}
-
-function _pair(x, y) {
-    return [x, y];
-}
-
-function sepBy1(parser, separator) {
-    return app(_sep_action,
-               parser,
-               many0(app(_pair, separator, parser)));
-}
-
-function sepBy0(parser, separator) {
-    return optional(sepBy1(parser, separator), {'values': [], 'separators': []});
+    const childParsers = C.seq(pairs.map(([name, parser]) => {
+        return C.fmap(value => [name, value], parser);
+    }));
+    return addErrorState(name, C.app(action, C.getState, childParsers, C.getState));
 }
 
 module.exports = {
     'node'    :  node,
-    'addError':  addError,
     'cut'     :  cut,
-    'sepBy0'  :  sepBy0
+    'addErrorState' : addErrorState
 };
 
 
-},{"./combinators.js":14}],16:[function(require,module,exports){
+},{"./combinators.js":14,"./functions.js":16}],16:[function(require,module,exports){
+'use strict';
+
+
+function compose(f, g) {
+    return (x) => f(g(x));
+}
+
+function first(x, _) {
+    return x;
+}
+
+function second(_, y) {
+    return y;
+}
+
+function pair(x, y) {
+    return [x, y];
+}
+
+function constF(x) {
+    return () => x;
+}
+
+function id(x) {
+    return x;
+}
+
+// probably not the optimal way to do this
+function cons(first, rest) {
+    var copy = rest.slice();
+    copy.unshift(first);
+    return copy;
+}
+
+function replicate(count, item) {
+    var array = [];
+    for (var i = 0; i < count; i++) {
+        array.push(item);
+    }
+    return array;
+}
+
+function flipApply(x, f) {
+    return f(x);
+}
+
+function debugString(value) {
+    if ( value === null ) {
+        return "null";
+    } else if ( typeof value === "function" ) {
+        return "function";
+    } else if ( value === undefined ) {
+        return "undefined";
+    } else {
+        return value.toString();
+    }
+}
+
+function dict(arr) {
+    return arr.reduce((accum, [key, value]) => {
+        accum[key] = value;
+        return accum;
+    }, {});
+}
+
+function updatePosition(char, position) {
+    /*
+    only treats `\n` as newline
+    */
+    const [line, col] = position;
+    return (char === '\n') ? [line + 1, 1] : [line, col + 1];
+}
+
+function applyAll(x, fs) {
+    return fs.reduce(flipApply, x);
+}
+
+function reverseApplyAll(fs, x) {
+    return fs.reduceRight(flipApply, x);
+}
+
+module.exports = {
+    'compose'        : compose        ,
+    'first'          : first          ,
+    'second'         : second         ,
+    'pair'           : pair           ,
+    'constF'         : constF         ,
+    'id'             : id             ,
+    'cons'           : cons           ,
+    'replicate'      : replicate      ,
+    'flipApply'      : flipApply      ,
+    'debugString'    : debugString    ,
+    'dict'           : dict           ,
+    'updatePosition' : updatePosition ,
+    'applyAll'       : applyAll       ,
+    'reverseApplyAll': reverseApplyAll
+};
+
+},{}],17:[function(require,module,exports){
 "use strict";
 
-var STATUSES = {
-    'success': 1,
-    'failure': 1,
-    'error'  : 1
-};
+const STATUSES = new Set(['success', 'failure', 'error']);
 
 function MaybeError(status, value) {
-    if ( !(status in STATUSES) ) {
+    if ( !STATUSES.has(status) ) {
         throw new Error('invalid MaybeError constructor name: ' + status);
     }
     this.status = status;
     this.value = value;
 }
 
-MaybeError.pure = function(x) {
-    return new MaybeError('success', x);
-};
+MaybeError.pure = (x) => new MaybeError('success', x);
 
-MaybeError.error = function(e) {
-    return new MaybeError('error', e);
-};
+MaybeError.zero = new MaybeError('failure', undefined);
+
+MaybeError.error = (e) => new MaybeError('error', e);
 
 MaybeError.prototype.fmap = function(f) {
-    if ( this.status === 'success' ) {
-        return MaybeError.pure(f(this.value));
-    }
-    return this;
+    return (this.status === 'success') ? MaybeError.pure(f(this.value)) : this;
 };
 
-MaybeError.app = function(f) {
-    var vals = Array.prototype.slice.call(arguments, 1),
-        args = [];
-    for(var i = 0; i < vals.length; i++) {
+MaybeError.app = function(f, ...vals) {
+    var args = [];
+    for (var i = 0; i < vals.length; i++) {
         if ( vals[i].status === 'success' ) {
             args.push(vals[i].value);
         } else {
             return vals[i];
         }
     }
-    return MaybeError.pure(f.apply(undefined, args));
+    return MaybeError.pure(f(...args));
 };
-        
+
 MaybeError.prototype.bind = function(f) {
-    if ( this.status === 'success' ) {
-        return f(this.value);
-    }
-    return this;
+    return (this.status === 'success') ? f(this.value) : this;
 };
 
 MaybeError.prototype.mapError = function(f) {
-    if ( this.status === 'error' ) {
-        return MaybeError.error(f(this.value));
-    }
-    return this;
+    return (this.status === 'error') ? MaybeError.error(f(this.value)) : this;
 };
 
 MaybeError.prototype.plus = function(that) {
-    if ( this.status === 'failure' ) {
-        return that;
-    }
-    return this;
+    return (this.status === 'failure') ? that : this;
 };
-
-MaybeError.zero = new MaybeError('failure', undefined);
 
 
 module.exports = MaybeError;
 
 
-},{}]},{},[4])
+},{}],18:[function(require,module,exports){
+"use strict";
+
+const C = require('./combinators');
+
+const checkParser = C.checkParser;
+
+function PrefixNode(op, arg) {
+    this.op = op;
+    this.arg = arg;
+}
+
+function PostfixNode(op, arg) {
+    this.op = op;
+    this.arg = arg;
+}
+
+function BinaryNode(op, arg1, arg2) {
+    this.op = op;
+    this.arg1 = arg1;
+    this.arg2 = arg2;
+}
+
+function dump(x) {
+    if (x instanceof BinaryNode) {
+        return ['(', x.op, ' ', dump(x.arg1), ' ', dump(x.arg2), ')'].join('');
+    } else if (x instanceof PrefixNode) {
+        return ['(', x.op, ' ', dump(x.arg), ')'].join('');
+    } else if (x instanceof PostfixNode) {
+        return ['(', dump(x.arg), ' ', x.op, ')'].join('');
+    }
+//    return JSON.stringify(x);
+    return x;
+}
+
+function constructR(left, pairs) {
+    if ( pairs.length === 0 ) {
+        return left;
+    } else {
+        const [[op, right], ...restPairs] = pairs;
+        return new BinaryNode(op, left, constructR(right, restPairs));
+    }
+}
+
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (BinaryNode a b)
+function chainR(operator, parser) {
+    checkParser('chainR', operator);
+    checkParser('chainR', parser);
+    return C.app(([first, pairs]) => constructR(first, pairs), C.sepBy1(parser, operator));
+}
+
+function constructL(first, pairs) {
+    return pairs.reduce((left, [op, right]) => new BinaryNode(op, left, right), first);
+}
+
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (BinaryNode a b)
+function chainL(operator, parser) {
+    checkParser('chainL', operator);
+    checkParser('chainL', parser);
+    return C.app(([first, pairs]) => constructL(first, pairs), C.sepBy1(parser, operator));
+}
+
+function constructPrefix(operators, value) {
+    return operators.reduceRight((accum, op) => new PrefixNode(op, accum), value);
+}
+
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (PrefixNode a b)
+function prefix(operator, parser) {
+    checkParser('prefix', operator);
+    checkParser('prefix', parser);
+    return C.app(constructPrefix, C.many0(operator), parser);
+}
+
+function constructPostfix(value, operators) {
+    return operators.reduce((accum, op) => new PostfixNode(op, accum), value);
+}
+
+// Parser e s (m t) a -> Parser e s (m t) b -> Parser e s (m t) (PostfixNode a b)
+function postfix(operator, parser) {
+    checkParser('postfix', operator);
+    checkParser('postfix', parser);
+    return C.app(constructPostfix, parser, C.many0(operator));
+}
+
+module.exports = {
+    'BinaryNode' : BinaryNode,
+    'PrefixNode' : PrefixNode,
+    'PostfixNode': PostfixNode,
+    
+    'chainL' : chainL,
+    'chainR' : chainR,
+    'prefix' : prefix,
+    'postfix': postfix,
+    
+    'constructL'      : constructL,
+    'constructR'      : constructR,
+    'constructPrefix' : constructPrefix,
+    'constructPostfix': constructPostfix,
+    
+    'dump': dump,
+};
+
+},{"./combinators":14}]},{},[4]);
